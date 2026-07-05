@@ -4,6 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Dot Image — image dotification tool</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -30,7 +33,7 @@
       <div class="preset-row">
         <button class="btn chip" data-preset="halftone">Halftone</button>
         <button class="btn chip" data-preset="stipple">Stipple</button>
-        <button class="btn chip" data-preset="duotone">Pop duotone</button>
+        <button class="btn chip" data-preset="duotone">Brand duotone</button>
         <button class="btn chip" data-preset="pointillist">Pointillist</button>
       </div>
     </section>
@@ -125,9 +128,9 @@
       </label>
 
       <div class="row control" data-color="duotone tritone">
-        <label class="swatch">Dark <input type="color" id="duoDark" value="#16213e"></label>
-        <label class="swatch" data-color="tritone">Mid <input type="color" id="triMid" value="#e94560"></label>
-        <label class="swatch">Light <input type="color" id="duoLight" value="#f5f1e8"></label>
+        <label class="swatch">Dark <input type="color" id="duoDark" value="#120F08"></label>
+        <label class="swatch" data-color="tritone">Mid <input type="color" id="triMid" value="#0021CC"></label>
+        <label class="swatch">Light <input type="color" id="duoLight" value="#F9F4EB"></label>
       </div>
 
       <label class="control" data-color="custom">
@@ -135,20 +138,20 @@
         <input type="range" id="customCount" min="2" max="6" step="1">
       </label>
       <div class="row control" data-color="custom" id="customSwatches">
-        <input type="color" value="#0f3460">
-        <input type="color" value="#e94560">
-        <input type="color" value="#f5f1e8">
-        <input type="color" value="#53bf9d">
-        <input type="color" value="#f9c74f">
-        <input type="color" value="#1a1a2e">
+        <input type="color" value="#0021CC">
+        <input type="color" value="#E5A119">
+        <input type="color" value="#F9F4EB">
+        <input type="color" value="#120F08">
+        <input type="color" value="#14B84B">
+        <input type="color" value="#CF6317">
       </div>
 
       <div class="row control" data-color="mono">
-        <label class="swatch">Dot color <input type="color" id="monoColor" value="#111111"></label>
+        <label class="swatch">Dot color <input type="color" id="monoColor" value="#120F08"></label>
       </div>
 
       <div class="row">
-        <label class="swatch">Background <input type="color" id="bgColor" value="#ffffff"></label>
+        <label class="swatch">Background <input type="color" id="bgColor" value="#F9F4EB"></label>
         <label class="check inline"><input type="checkbox" id="bgTransparent"> Transparent</label>
       </div>
     </section>
@@ -173,10 +176,12 @@
   </aside>
 
   <main class="stage" id="stage">
-    <div class="stage-bar">
-      <span id="dotReadout">–</span>
-      <button id="compareBtn" class="btn small">Hold to compare</button>
+    <div class="brand-header">
+      <span class="brand-prefix">Listen Labs /</span>
+      <span class="brand-title"> Dot Image</span>
     </div>
+    <span id="dotReadout">–</span>
+    <button id="compareBtn" class="btn small">Hold to compare</button>
     <div class="canvas-wrap" id="canvasWrap">
       <canvas id="canvas"></canvas>
       <div class="drop-hint" id="dropHint">Drop an image here</div>

@@ -31,14 +31,14 @@ const state = {
 
   colorMode: "original",  // original | limited | duotone | tritone | custom | mono
   paletteSize: 6,
-  duoDark: "#16213e",
-  duoLight: "#f5f1e8",
-  triMid: "#e94560",
-  monoColor: "#111111",
+  duoDark: "#120F08",
+  duoLight: "#F9F4EB",
+  triMid: "#0021CC",
+  monoColor: "#120F08",
   customCount: 3,
-  customColors: ["#0f3460", "#e94560", "#f5f1e8", "#53bf9d", "#f9c74f", "#1a1a2e"],
+  customColors: ["#0021CC", "#E5A119", "#F9F4EB", "#120F08", "#14B84B", "#CF6317"],
 
-  bgColor: "#ffffff",
+  bgColor: "#F9F4EB",
   bgTransparent: false,
 };
 
@@ -784,29 +784,29 @@ function applyPreset(name) {
     Object.assign(state, {
       layout: "halftone", spacing: 14, angle: 45,
       dotSize: 15, sizeMode: "dark", sizeRange: 100, shape: "circle",
-      colorMode: "mono", monoColor: "#111111",
-      bgColor: "#f7f4ec", bgTransparent: false,
+      colorMode: "mono", monoColor: "#120F08",
+      bgColor: "#F9F4EB", bgTransparent: false,
     });
   } else if (name === "stipple") {
     Object.assign(state, {
       layout: "scatter", count: 30000, minDist: 2.5, importance: true,
       dotSize: 4, sizeMode: "uniform", shape: "circle",
-      colorMode: "mono", monoColor: "#1a1a1a",
-      bgColor: "#ffffff", bgTransparent: false,
+      colorMode: "mono", monoColor: "#120F08",
+      bgColor: "#F9F4EB", bgTransparent: false,
     });
   } else if (name === "duotone") {
     Object.assign(state, {
       layout: "hex", spacing: 16,
       dotSize: 15, sizeMode: "dark", sizeRange: 70, shape: "circle",
-      colorMode: "duotone", duoDark: "#16213e", duoLight: "#ff7096",
-      bgColor: "#0d1021", bgTransparent: false,
+      colorMode: "duotone", duoDark: "#0021CC", duoLight: "#F9F4EB",
+      bgColor: "#F9F4EB", bgTransparent: false,
     });
   } else if (name === "pointillist") {
     Object.assign(state, {
       layout: "scatter", count: 22000, minDist: 3, importance: false,
       dotSize: 8, sizeMode: "dark", sizeRange: 40, shape: "circle",
       colorMode: "original",
-      bgColor: "#f5f1e8", bgTransparent: false,
+      bgColor: "#F9F4EB", bgTransparent: false,
     });
   }
   syncControlsFromState();
