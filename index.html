@@ -22,7 +22,11 @@
       <h2>Image</h2>
       <div class="row">
         <button id="uploadBtn" class="btn primary">Upload image</button>
-        <button id="sampleBtn" class="btn">Load sample</button>
+      </div>
+      <div class="preset-row">
+        <button class="btn chip" data-sample="samples/portrait-green.webp">Sample: green</button>
+        <button class="btn chip" data-sample="samples/portrait-blue.webp">Sample: blue</button>
+        <button class="btn chip" id="sampleBtn">Sample: sunset</button>
       </div>
       <p class="hint">…or drag &amp; drop / paste an image anywhere.</p>
       <input type="file" id="fileInput" accept="image/*" hidden>
@@ -35,6 +39,7 @@
         <button class="btn chip" data-preset="stipple">Stipple</button>
         <button class="btn chip" data-preset="duotone">Brand duotone</button>
         <button class="btn chip" data-preset="pointillist">Pointillist</button>
+        <button class="btn chip" data-preset="goo">Goo</button>
       </div>
     </section>
 
@@ -105,6 +110,16 @@
           <option value="circle" selected>Circle</option>
           <option value="square">Square</option>
         </select>
+      </label>
+
+      <label class="check control">
+        <input type="checkbox" id="goo">
+        <span>Goo (merge dots that are close together)</span>
+      </label>
+
+      <label class="control" id="gooReachWrap">
+        <span>Goo reach <output id="gooReachOut"></output></span>
+        <input type="range" id="gooReach" min="0" max="100" step="1">
       </label>
     </section>
 

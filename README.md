@@ -22,6 +22,11 @@ runs client-side — no server, no upload, no dependencies.
 - Size modulation: uniform, dark-is-big (halftone style), or light-is-big,
   with a variation-strength slider
 - Circle or square dot shapes
+- **Goo** (optional) — dots closer than the *reach* gap melt together with
+  smooth circular fillets, like droplets joining. Dots stay perfectly round
+  until they're close enough; small enclosed holes fill in. In palette, mono
+  and custom modes only same-colored dots merge; in original, duotone and
+  tritone modes everything merges and each dot keeps its color
 
 ### Color
 - **Original** — each dot averages the image colors under its footprint
@@ -40,8 +45,9 @@ runs client-side — no server, no upload, no dependencies.
 ### Other
 - Drag & drop, paste, or upload images (EXIF orientation handled)
 - Hold-to-compare against the original
-- Presets: Halftone, Stipple, Pop duotone, Pointillist
-- Built-in procedural sample image so the tool demos itself
+- Presets: Halftone, Stipple, Brand duotone, Pointillist, Goo
+- Two bundled sample portraits (`samples/`) plus a procedural sample, so the
+  tool demos itself (opened from `file://`, it falls back to the procedural one)
 - Dot layouts are stored in resolution-independent units (image = 1000 units
   wide), so exports at any size are exact
 - Hard cap of 60k dots keeps the UI responsive on any input
@@ -51,8 +57,14 @@ runs client-side — no server, no upload, no dependencies.
 Single static page: `index.html` + `styles.css` + `app.js`.
 
 Pipeline: source image → downscaled sample buffer → dot layout → per-dot color
-sampling (area average) → color mapping → styling → canvas render. Exports
-re-render the same dot data to SVG text or an offscreen canvas.
+sampling (area average) → color mapping → styling → goo (optional) → canvas
+render. Exports re-render the same dot data to SVG text or an offscreen canvas.
+
+Goo builds a signed distance field on a grid — circle edges plus rolling-ball
+fillets between each merging pair (squares use a round union instead) — and
+contours it with marching squares into vector paths, so SVG exports stay true
+vectors. In the continuous color modes the merged outline becomes a
+`clipPath` filled with slightly grown dots, with the exact dots on top.
 
 ## Ideas / roadmap
 
