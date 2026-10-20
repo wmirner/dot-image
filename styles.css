@@ -165,6 +165,7 @@ input[type="color"] {
 .btn:hover { background: var(--surface-tertiary); }
 .btn.primary { background: var(--surface-brand-primary); color: var(--content-brand-contrast); }
 .btn.primary:hover { background: var(--content-brand); }
+.btn.chip.active { background: var(--surface-brand-primary); color: var(--content-brand-contrast); }
 .btn.small, .btn.chip { height: 24px; padding: 0 8px; }
 .btn:disabled { color: var(--content-disabled); cursor: default; }
 

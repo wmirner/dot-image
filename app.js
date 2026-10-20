@@ -1329,7 +1329,17 @@ function applyPreset(name) {
       colorMode: "mono", monoColor: "#0021CC",
       bgColor: "#F9F4EB", bgTransparent: false, goo: true, gooReach: 30,
     });
+  } else if (name === "twins") {
+    // big hex matrix, brand blue fading to a pale blue tint so every dot reads
+    Object.assign(state, {
+      layout: "hex", spacing: 52,
+      dotSize: 50, sizeMode: "dark", sizeRange: 65, shape: "circle",
+      colorMode: "duotone", duoDark: "#0021CC", duoLight: "#E2E4F4",
+      bgColor: "#F9F4EB", bgTransparent: false, goo: false,
+    });
   }
+  document.querySelectorAll("[data-preset]").forEach(b =>
+    b.classList.toggle("active", b.dataset.preset === name));
   syncControlsFromState();
   update("layout");
 }
