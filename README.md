@@ -45,7 +45,7 @@ runs client-side — no server, no upload, no dependencies.
 ### Other
 - Drag & drop, paste, or upload images (EXIF orientation handled)
 - Hold-to-compare against the original
-- Presets: Halftone, Stipple, Brand duotone, Pointillist, Goo
+- Presets: Halftone, Stipple, Brand duotone, Pointillist, Goo, Twins avatar
 - Two bundled sample portraits (`samples/`) plus a procedural sample, so the
   tool demos itself (opened from `file://`, it falls back to the procedural one)
 - Dot layouts are stored in resolution-independent units (image = 1000 units
