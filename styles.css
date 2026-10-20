@@ -151,6 +151,11 @@ input[type="color"] {
 
 .hint { color: var(--content-secondary); font-size: 12px; margin: 8px 0 0; }
 
+/* locked presets hide every tuning control */
+#lockedHint { display: none; }
+body.locked #lockedHint { display: block; }
+body.locked [data-tunable] { display: none; }
+
 .btn {
   height: 32px;
   background: var(--surface-secondary);

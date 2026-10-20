@@ -1340,6 +1340,8 @@ function applyPreset(name) {
   }
   document.querySelectorAll("[data-preset]").forEach(b =>
     b.classList.toggle("active", b.dataset.preset === name));
+  // Twins avatars must all match, so its settings can't be tuned
+  document.body.classList.toggle("locked", name === "twins");
   syncControlsFromState();
   update("layout");
 }
