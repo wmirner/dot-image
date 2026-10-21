@@ -24,7 +24,9 @@ original photo.
 
 All settings live in the `state` object at the top of `app.js` (spacing, dot
 size, size variation, colors, background). Change them there and push to
-`main`; GitHub Pages redeploys automatically.
+`main`; GitHub Pages redeploys automatically. Bump the `?v=` number on the
+`app.js` and `styles.css` links in `index.html` too, or browsers may keep
+using their cached copy for a few minutes.
 
 ## Architecture
 
