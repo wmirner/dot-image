@@ -42,9 +42,10 @@
         <button class="btn chip" data-preset="goo">Goo</button>
         <button class="btn chip" data-preset="twins">Twins avatar</button>
       </div>
+      <p class="hint" id="lockedHint">Twins avatar settings are fixed so every avatar matches.</p>
     </section>
 
-    <section class="group">
+    <section class="group" data-tunable>
       <h2>Layout</h2>
       <div class="seg" id="layoutSeg">
         <button data-layout="square">Square</button>
@@ -84,7 +85,7 @@
       </div>
     </section>
 
-    <section class="group">
+    <section class="group" data-tunable>
       <h2>Dots</h2>
       <label class="control">
         <span>Dot size <output id="dotSizeOut"></output></span>
@@ -124,7 +125,7 @@
       </label>
     </section>
 
-    <section class="group">
+    <section class="group" data-tunable>
       <h2>Color</h2>
       <label class="control">
         <span>Mode</span>
