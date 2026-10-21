@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Dot Image — image dotification tool</title>
+<title>Twins Avatar</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter&display=swap" rel="stylesheet">
@@ -14,8 +14,8 @@
 
   <aside class="sidebar">
     <header class="brand">
-      <h1>Dot Image</h1>
-      <p>Turn any image into dots</p>
+      <h1>Twins Avatar</h1>
+      <p>Turn a photo into a Twins avatar</p>
     </header>
 
     <section class="group">
@@ -23,170 +23,14 @@
       <div class="row">
         <button id="uploadBtn" class="btn primary">Upload image</button>
       </div>
-      <div class="preset-row">
-        <button class="btn chip" data-sample="samples/portrait-green.webp">Sample: green</button>
-        <button class="btn chip" data-sample="samples/portrait-blue.webp">Sample: blue</button>
-        <button class="btn chip" id="sampleBtn">Sample: sunset</button>
-      </div>
       <p class="hint">…or drag &amp; drop / paste an image anywhere.</p>
       <input type="file" id="fileInput" accept="image/*" hidden>
     </section>
 
     <section class="group">
-      <h2>Presets</h2>
-      <div class="preset-row">
-        <button class="btn chip" data-preset="halftone">Halftone</button>
-        <button class="btn chip" data-preset="stipple">Stipple</button>
-        <button class="btn chip" data-preset="duotone">Brand duotone</button>
-        <button class="btn chip" data-preset="pointillist">Pointillist</button>
-        <button class="btn chip" data-preset="goo">Goo</button>
-        <button class="btn chip" data-preset="twins">Twins avatar</button>
-      </div>
-      <p class="hint" id="lockedHint">Twins avatar settings are fixed so every avatar matches.</p>
-    </section>
-
-    <section class="group" data-tunable>
-      <h2>Layout</h2>
-      <div class="seg" id="layoutSeg">
-        <button data-layout="square">Square</button>
-        <button data-layout="hex" class="active">Hex</button>
-        <button data-layout="halftone">Halftone</button>
-        <button data-layout="scatter">Freeform</button>
-      </div>
-
-      <label class="control" data-show="square hex halftone">
-        <span>Spacing <output id="spacingOut"></output></span>
-        <input type="range" id="spacing" min="6" max="80" step="1">
-      </label>
-
-      <label class="control" data-show="halftone">
-        <span>Grid angle <output id="angleOut"></output></span>
-        <input type="range" id="angle" min="0" max="90" step="1">
-      </label>
-
-      <label class="control" data-show="scatter">
-        <span>Dot count <output id="countOut"></output></span>
-        <input type="range" id="count" min="200" max="50000" step="100">
-      </label>
-
-      <label class="control" data-show="scatter">
-        <span>Min spacing <output id="minDistOut"></output></span>
-        <input type="range" id="minDist" min="0" max="30" step="0.5">
-      </label>
-
-      <label class="check control" data-show="scatter">
-        <input type="checkbox" id="importance" checked>
-        <span>Density follows image (more dots in dark areas)</span>
-      </label>
-
-      <div class="row control" data-show="scatter">
-        <label class="inline">Seed <input type="number" id="seed" min="1" max="99999" value="7"></label>
-        <button id="shuffleBtn" class="btn">Shuffle</button>
-      </div>
-    </section>
-
-    <section class="group" data-tunable>
-      <h2>Dots</h2>
-      <label class="control">
-        <span>Dot size <output id="dotSizeOut"></output></span>
-        <input type="range" id="dotSize" min="2" max="60" step="1">
-      </label>
-
-      <label class="control">
-        <span>Size responds to</span>
-        <select id="sizeMode">
-          <option value="uniform">Nothing (uniform)</option>
-          <option value="dark" selected>Darkness (dark = big)</option>
-          <option value="light">Brightness (light = big)</option>
-        </select>
-      </label>
-
-      <label class="control" id="sizeRangeWrap">
-        <span>Size variation <output id="sizeRangeOut"></output></span>
-        <input type="range" id="sizeRange" min="0" max="100" step="1">
-      </label>
-
-      <label class="control">
-        <span>Shape</span>
-        <select id="shape">
-          <option value="circle" selected>Circle</option>
-          <option value="square">Square</option>
-        </select>
-      </label>
-
-      <label class="check control">
-        <input type="checkbox" id="goo">
-        <span>Goo (merge dots that are close together)</span>
-      </label>
-
-      <label class="control" id="gooReachWrap">
-        <span>Goo reach <output id="gooReachOut"></output></span>
-        <input type="range" id="gooReach" min="0" max="100" step="1">
-      </label>
-    </section>
-
-    <section class="group" data-tunable>
-      <h2>Color</h2>
-      <label class="control">
-        <span>Mode</span>
-        <select id="colorMode">
-          <option value="original" selected>Original colors</option>
-          <option value="limited">Limited palette (from image)</option>
-          <option value="duotone">Duotone</option>
-          <option value="tritone">Tritone</option>
-          <option value="custom">Custom palette</option>
-          <option value="mono">Monochrome</option>
-        </select>
-      </label>
-
-      <label class="control" data-color="limited">
-        <span>Palette size <output id="paletteSizeOut"></output></span>
-        <input type="range" id="paletteSize" min="2" max="16" step="1">
-      </label>
-
-      <div class="row control" data-color="duotone tritone">
-        <label class="swatch">Dark <input type="color" id="duoDark" value="#120F08"></label>
-        <label class="swatch" data-color="tritone">Mid <input type="color" id="triMid" value="#0021CC"></label>
-        <label class="swatch">Light <input type="color" id="duoLight" value="#F9F4EB"></label>
-      </div>
-
-      <label class="control" data-color="custom">
-        <span>Palette colors <output id="customCountOut"></output></span>
-        <input type="range" id="customCount" min="2" max="6" step="1">
-      </label>
-      <div class="row control" data-color="custom" id="customSwatches">
-        <input type="color" value="#0021CC">
-        <input type="color" value="#E5A119">
-        <input type="color" value="#F9F4EB">
-        <input type="color" value="#120F08">
-        <input type="color" value="#14B84B">
-        <input type="color" value="#CF6317">
-      </div>
-
-      <div class="row control" data-color="mono">
-        <label class="swatch">Dot color <input type="color" id="monoColor" value="#120F08"></label>
-      </div>
-
-      <div class="row">
-        <label class="swatch">Background <input type="color" id="bgColor" value="#F9F4EB"></label>
-        <label class="check inline"><input type="checkbox" id="bgTransparent"> Transparent</label>
-      </div>
-    </section>
-
-    <section class="group">
       <h2>Export</h2>
       <div class="row">
-        <button id="exportSvg" class="btn">SVG</button>
-        <select id="pngScale">
-          <option value="1000">PNG 1000px</option>
-          <option value="2000" selected>PNG 2000px</option>
-          <option value="4000">PNG 4000px</option>
-        </select>
-        <button id="exportPng" class="btn">PNG</button>
-      </div>
-      <div class="row">
-        <button id="copyBtn" class="btn">Copy image</button>
-        <button id="exportWebm" class="btn">Animation (WebM)</button>
+        <button id="exportPng" class="btn">Download PNG</button>
       </div>
       <p class="hint" id="exportStatus"></p>
     </section>
@@ -195,7 +39,7 @@
   <main class="stage" id="stage">
     <div class="brand-header">
       <span class="brand-prefix">Listen Labs /</span>
-      <span class="brand-title"> Dot Image</span>
+      <span class="brand-title"> Twins Avatar</span>
     </div>
     <span id="dotReadout">–</span>
     <button id="compareBtn" class="btn small">Hold to compare</button>

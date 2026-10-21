@@ -151,10 +151,6 @@ input[type="color"] {
 
 .hint { color: var(--content-secondary); font-size: 12px; margin: 8px 0 0; }
 
-/* locked presets hide every tuning control */
-#lockedHint { display: none; }
-body.locked #lockedHint { display: block; }
-body.locked [data-tunable] { display: none; }
 
 .btn {
   height: 32px;
@@ -170,7 +166,6 @@ body.locked [data-tunable] { display: none; }
 .btn:hover { background: var(--surface-tertiary); }
 .btn.primary { background: var(--surface-brand-primary); color: var(--content-brand-contrast); }
 .btn.primary:hover { background: var(--content-brand); }
-.btn.chip.active { background: var(--surface-brand-primary); color: var(--content-brand-contrast); }
 .btn.small, .btn.chip { height: 24px; padding: 0 8px; }
 .btn:disabled { color: var(--content-disabled); cursor: default; }
 

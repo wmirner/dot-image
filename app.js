@@ -15,26 +15,29 @@
 const UNITS_W = 1000;     // logical width of every image, in units
 const MAX_DOTS = 60000;   // hard safety cap across all modes
 
+// Fixed Twins avatar look: big hex dots, brand blue fading to a pale blue
+// tint so every dot reads. These are deliberately not user-adjustable so
+// every avatar matches.
 const state = {
   layout: "hex",          // square | hex | halftone | scatter
-  spacing: 16,            // grid spacing, units
+  spacing: 52,            // grid spacing, units
   angle: 45,              // halftone grid angle, degrees
   count: 6000,            // scatter target dot count
   minDist: 6,             // scatter minimum distance, units
   importance: true,       // scatter density follows image darkness
   seed: 7,
 
-  dotSize: 14,            // base dot diameter, units
+  dotSize: 50,            // base dot diameter, units
   sizeMode: "dark",       // uniform | dark | light
-  sizeRange: 80,          // % of size that luminance can take away
+  sizeRange: 65,          // % of size that luminance can take away
   shape: "circle",        // circle | square
   goo: false,             // merge nearby dots into smooth blobs
   gooReach: 30,           // gap (as % of dot size) at which dots start to merge
 
-  colorMode: "original",  // original | limited | duotone | tritone | custom | mono
+  colorMode: "duotone",   // original | limited | duotone | tritone | custom | mono
   paletteSize: 6,
-  duoDark: "#120F08",
-  duoLight: "#F9F4EB",
+  duoDark: "#0021CC",
+  duoLight: "#E2E4F4",
   triMid: "#0021CC",
   monoColor: "#120F08",
   customCount: 3,
@@ -979,79 +982,6 @@ function setExportStatus(msg) {
   document.getElementById("exportStatus").textContent = msg;
 }
 
-async function exportWebm() {
-  const btn = document.getElementById("exportWebm");
-  btn.disabled = true;
-
-  // per-dot stagger from a seeded hash so the reveal order is stable
-  const rand = mulberry32(state.seed + 555);
-  const stagger = new Float32Array(styled.length);
-  for (let i = 0; i < styled.length; i++) stagger[i] = rand();
-  const easeOutCubic = t => 1 - Math.pow(1 - t, 3);
-  const DURATION = 3000, HOLD = 800;
-  const listAt = t => styled.map((d, i) => {
-    const local = (t - stagger[i] * 0.6) / 0.4;
-    const p = local <= 0 ? 0 : easeOutCubic(Math.min(1, local));
-    return { x: d.x, y: d.y, fill: d.fill, r: d.r * p };
-  });
-
-  // Goo depends on every radius, so each frame needs its own geometry. That's
-  // too slow to build live, so frames are prepared up front at GOO_FPS and
-  // played back in real time while recording.
-  const GOO_FPS = 30;
-  let gooFrames = null;
-  if (state.goo) {
-    const count = Math.ceil(DURATION / 1000 * GOO_FPS);
-    gooFrames = [];
-    for (let f = 0; f <= count; f++) {
-      setExportStatus(`Preparing goo frames… ${f + 1}/${count + 1}`);
-      await new Promise(r => setTimeout(r, 0));
-      const list = listAt(f / count);
-      const g = computeGoo(list);
-      for (const sh of g.shapes) { gooPath(sh); sh.loops = null; }
-      if (g.clip) { gooPath(g.clip); g.clip.loops = null; }
-      gooFrames.push({ list, goo: g });
-    }
-  }
-
-  setExportStatus("Recording animation…");
-  const c = document.createElement("canvas");
-  const pxWidth = Math.min(1600, UNITS_W * 2);
-  c.width = pxWidth;
-  c.height = Math.round(pxWidth * unitsH / UNITS_W);
-  const ctx = c.getContext("2d");
-
-  const stream = c.captureStream(60);
-  const mime = MediaRecorder.isTypeSupported("video/webm;codecs=vp9")
-    ? "video/webm;codecs=vp9" : "video/webm";
-  const rec = new MediaRecorder(stream, { mimeType: mime, videoBitsPerSecond: 12_000_000 });
-  const chunks = [];
-  rec.ondataavailable = e => { if (e.data.size) chunks.push(e.data); };
-  const done = new Promise(res => { rec.onstop = res; });
-  rec.start();
-
-  const t0 = performance.now();
-  await new Promise(resolve => {
-    function frame(now) {
-      const t = Math.min(1, (now - t0) / DURATION);
-      if (gooFrames) {
-        renderTo(ctx, pxWidth, gooFrames[Math.round(t * (gooFrames.length - 1))]);
-      } else {
-        renderTo(ctx, pxWidth, { list: listAt(t), goo: null });
-      }
-      if (now - t0 < DURATION + HOLD) requestAnimationFrame(frame);
-      else resolve();
-    }
-    requestAnimationFrame(frame);
-  });
-
-  rec.stop();
-  await done;
-  download(new Blob(chunks, { type: "video/webm" }), "dot-image.webm");
-  setExportStatus("Animation saved.");
-  btn.disabled = false;
-}
-
 // ---------------------------------------------------------------------------
 // Sample image (procedural, so the tool demos itself without an upload)
 // ---------------------------------------------------------------------------
@@ -1101,70 +1031,11 @@ function makeSampleImage() {
 
 const $ = id => document.getElementById(id);
 
-function bindRange(id, key, level, fmt = v => v) {
-  const el = $(id);
-  const out = $(id + "Out");
-  el.value = state[key];
-  if (out) out.textContent = fmt(state[key]);
-  el.addEventListener("input", () => {
-    state[key] = parseFloat(el.value);
-    if (out) out.textContent = fmt(state[key]);
-    update(level);
-  });
-}
-
-function syncControlsFromState() {
-  for (const [id, key] of [
-    ["spacing", "spacing"], ["angle", "angle"], ["count", "count"],
-    ["minDist", "minDist"], ["dotSize", "dotSize"], ["sizeRange", "sizeRange"],
-    ["paletteSize", "paletteSize"], ["customCount", "customCount"],
-    ["gooReach", "gooReach"],
-  ]) {
-    $(id).value = state[key];
-    const out = $(id + "Out");
-    if (out) out.textContent = state[key].toLocaleString ? state[key].toLocaleString() : state[key];
-  }
-  $("importance").checked = state.importance;
-  $("seed").value = state.seed;
-  $("sizeMode").value = state.sizeMode;
-  $("shape").value = state.shape;
-  $("goo").checked = state.goo;
-  $("colorMode").value = state.colorMode;
-  $("duoDark").value = state.duoDark;
-  $("duoLight").value = state.duoLight;
-  $("triMid").value = state.triMid;
-  $("monoColor").value = state.monoColor;
-  $("bgColor").value = state.bgColor;
-  $("bgTransparent").checked = state.bgTransparent;
-  document.querySelectorAll("#layoutSeg button").forEach(b =>
-    b.classList.toggle("active", b.dataset.layout === state.layout));
-  updateVisibility();
-}
-
-function updateVisibility() {
-  document.querySelectorAll("[data-show]").forEach(el => {
-    el.style.display = el.dataset.show.split(" ").includes(state.layout) ? "" : "none";
-  });
-  document.querySelectorAll("[data-color]").forEach(el => {
-    el.style.display = el.dataset.color.split(" ").includes(state.colorMode) ? "" : "none";
-  });
-  $("sizeRangeWrap").style.display = state.sizeMode === "uniform" ? "none" : "";
-  $("gooReachWrap").style.display = state.goo ? "" : "none";
-  const swatches = $("customSwatches").querySelectorAll("input");
-  swatches.forEach((inp, i) => {
-    inp.style.display = i < state.customCount ? "" : "none";
-  });
-}
-
 function initUI() {
   // image loading
   $("uploadBtn").addEventListener("click", () => $("fileInput").click());
   $("fileInput").addEventListener("change", e => {
     if (e.target.files[0]) loadImageFile(e.target.files[0]);
-  });
-  $("sampleBtn").addEventListener("click", () => setSourceImage(makeSampleImage()));
-  document.querySelectorAll("[data-sample]").forEach(btn => {
-    btn.addEventListener("click", () => loadSampleUrl(btn.dataset.sample));
   });
 
   const wrap = $("canvasWrap");
@@ -1182,79 +1053,6 @@ function initUI() {
     }
   });
 
-  // layout
-  document.querySelectorAll("#layoutSeg button").forEach(btn => {
-    btn.addEventListener("click", () => {
-      state.layout = btn.dataset.layout;
-      document.querySelectorAll("#layoutSeg button").forEach(b =>
-        b.classList.toggle("active", b === btn));
-      updateVisibility();
-      update("layout");
-    });
-  });
-  bindRange("spacing", "spacing", "layout");
-  bindRange("angle", "angle", "layout", v => v + "°");
-  bindRange("count", "count", "layout", v => v.toLocaleString());
-  bindRange("minDist", "minDist", "layout");
-  $("importance").addEventListener("change", e => {
-    state.importance = e.target.checked;
-    update("layout");
-  });
-  $("seed").addEventListener("change", e => {
-    state.seed = Math.max(1, parseInt(e.target.value) || 1);
-    update("layout");
-  });
-  $("shuffleBtn").addEventListener("click", () => {
-    state.seed = 1 + Math.floor(Math.random() * 99999);
-    $("seed").value = state.seed;
-    update("layout");
-  });
-
-  // dots
-  bindRange("dotSize", "dotSize", "color"); // dot size affects area sampling
-  $("sizeMode").addEventListener("change", e => {
-    state.sizeMode = e.target.value;
-    updateVisibility();
-    update("style");
-  });
-  bindRange("sizeRange", "sizeRange", "style", v => v + "%");
-  $("shape").addEventListener("change", e => {
-    state.shape = e.target.value;
-    update("style");
-  });
-  $("goo").addEventListener("change", e => {
-    state.goo = e.target.checked;
-    updateVisibility();
-    update("style");
-  });
-  bindRange("gooReach", "gooReach", "style", v => v + "%");
-
-  // color
-  $("colorMode").addEventListener("change", e => {
-    state.colorMode = e.target.value;
-    updateVisibility();
-    update("style");
-  });
-  bindRange("paletteSize", "paletteSize", "style");
-  for (const [id, key] of [["duoDark", "duoDark"], ["duoLight", "duoLight"],
-                           ["triMid", "triMid"], ["monoColor", "monoColor"]]) {
-    $(id).addEventListener("input", e => { state[key] = e.target.value; update("style"); });
-  }
-  bindRange("customCount", "customCount", "style", v => { updateVisibility(); return v; });
-  $("customSwatches").querySelectorAll("input").forEach((inp, i) => {
-    inp.addEventListener("input", () => { state.customColors[i] = inp.value; update("style"); });
-  });
-  $("bgColor").addEventListener("input", e => { state.bgColor = e.target.value; update("render"); });
-  $("bgTransparent").addEventListener("change", e => {
-    state.bgTransparent = e.target.checked;
-    update("render");
-  });
-
-  // presets
-  document.querySelectorAll("[data-preset]").forEach(btn => {
-    btn.addEventListener("click", () => applyPreset(btn.dataset.preset));
-  });
-
   // compare
   const compare = $("compareBtn");
   const showOrig = e => { e.preventDefault(); renderOriginalPreview(); };
@@ -1263,87 +1061,14 @@ function initUI() {
   compare.addEventListener("pointerup", showDots);
   compare.addEventListener("pointerleave", showDots);
 
-  // exports
-  $("exportSvg").addEventListener("click", () => {
-    download(new Blob([buildSvg()], { type: "image/svg+xml" }), "dot-image.svg");
-    setExportStatus("SVG saved.");
-  });
+  // export
   $("exportPng").addEventListener("click", async () => {
-    const px = parseInt($("pngScale").value);
     setExportStatus("Rendering PNG…");
-    download(await renderPngBlob(px), `dot-image-${px}px.png`);
+    download(await renderPngBlob(2000), "twins-avatar.png");
     setExportStatus("PNG saved.");
   });
-  $("copyBtn").addEventListener("click", async () => {
-    try {
-      setExportStatus("Copying…");
-      const blob = await renderPngBlob(2000);
-      await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
-      setExportStatus("Copied to clipboard.");
-    } catch (err) {
-      setExportStatus("Copy failed — your browser may not allow image clipboard access.");
-    }
-  });
-  $("exportWebm").addEventListener("click", exportWebm);
 
   window.addEventListener("resize", () => update("render"));
-}
-
-// ---------------------------------------------------------------------------
-// Presets
-// ---------------------------------------------------------------------------
-
-function applyPreset(name) {
-  if (name === "halftone") {
-    Object.assign(state, {
-      layout: "halftone", spacing: 14, angle: 45,
-      dotSize: 15, sizeMode: "dark", sizeRange: 100, shape: "circle",
-      colorMode: "mono", monoColor: "#120F08",
-      bgColor: "#F9F4EB", bgTransparent: false, goo: false,
-    });
-  } else if (name === "stipple") {
-    Object.assign(state, {
-      layout: "scatter", count: 30000, minDist: 2.5, importance: true,
-      dotSize: 4, sizeMode: "uniform", shape: "circle",
-      colorMode: "mono", monoColor: "#120F08",
-      bgColor: "#F9F4EB", bgTransparent: false, goo: false,
-    });
-  } else if (name === "duotone") {
-    Object.assign(state, {
-      layout: "hex", spacing: 16,
-      dotSize: 15, sizeMode: "dark", sizeRange: 70, shape: "circle",
-      colorMode: "duotone", duoDark: "#0021CC", duoLight: "#F9F4EB",
-      bgColor: "#F9F4EB", bgTransparent: false, goo: false,
-    });
-  } else if (name === "pointillist") {
-    Object.assign(state, {
-      layout: "scatter", count: 22000, minDist: 3, importance: false,
-      dotSize: 8, sizeMode: "dark", sizeRange: 40, shape: "circle",
-      colorMode: "original",
-      bgColor: "#F9F4EB", bgTransparent: false, goo: false,
-    });
-  } else if (name === "goo") {
-    Object.assign(state, {
-      layout: "hex", spacing: 14,
-      dotSize: 16, sizeMode: "dark", sizeRange: 90, shape: "circle",
-      colorMode: "mono", monoColor: "#0021CC",
-      bgColor: "#F9F4EB", bgTransparent: false, goo: true, gooReach: 30,
-    });
-  } else if (name === "twins") {
-    // big hex matrix, brand blue fading to a pale blue tint so every dot reads
-    Object.assign(state, {
-      layout: "hex", spacing: 52,
-      dotSize: 50, sizeMode: "dark", sizeRange: 65, shape: "circle",
-      colorMode: "duotone", duoDark: "#0021CC", duoLight: "#E2E4F4",
-      bgColor: "#F9F4EB", bgTransparent: false, goo: false,
-    });
-  }
-  document.querySelectorAll("[data-preset]").forEach(b =>
-    b.classList.toggle("active", b.dataset.preset === name));
-  // Twins avatars must all match, so its settings can't be tuned
-  document.body.classList.toggle("locked", name === "twins");
-  syncControlsFromState();
-  update("layout");
 }
 
 // ---------------------------------------------------------------------------
@@ -1351,5 +1076,4 @@ function applyPreset(name) {
 // ---------------------------------------------------------------------------
 
 initUI();
-syncControlsFromState();
-loadSampleUrl("samples/portrait-green.webp");
+loadSampleUrl("samples/portrait-blue.webp");
