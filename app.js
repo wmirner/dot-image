@@ -882,29 +882,56 @@ function renderTo(ctx, pxWidth, opts = {}) {
   ctx.restore();
 }
 
-const canvas = document.getElementById("canvas");
+// Previews mimic how LinkedIn shows a profile photo: a center-cropped circle
+// at profile (160px), post (48px) and comment (32px) sizes. The dots only
+// read as a face when small, so the preview is deliberately small too.
+const previews = [...document.querySelectorAll("canvas[data-size]")];
+
+// Draw the center square of a full-image render into each preview canvas.
+function drawPreviews(drawFull) {
+  const aspect = unitsH / UNITS_W;
+  const fit = Math.min(1, aspect); // square side as a fraction of image width
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  for (const c of previews) {
+    const size = parseInt(c.dataset.size);
+    const px = Math.round(size * dpr);
+    c.style.width = c.style.height = size + "px";
+    c.width = c.height = px;
+    // render big and scale down smoothly, like a platform resizing the upload;
+    // drawing tiny dots directly aliases into stripes
+    const k = Math.max(1, Math.floor(1000 / px));
+    const side = px * k;
+    const fullW = Math.round(side / fit);
+    const fullH = Math.round(fullW * aspect);
+    const full = document.createElement("canvas");
+    full.width = fullW; full.height = fullH;
+    drawFull(full.getContext("2d"), fullW, fullH);
+    // crop the square, then halve step by step: one big downscale skips pixels
+    let src = document.createElement("canvas");
+    src.width = src.height = side;
+    src.getContext("2d").drawImage(full, (fullW - side) / 2, (fullH - side) / 2, side, side, 0, 0, side, side);
+    while (src.width / 2 >= px) {
+      const half = document.createElement("canvas");
+      half.width = half.height = Math.round(src.width / 2);
+      const hctx = half.getContext("2d");
+      hctx.imageSmoothingQuality = "high";
+      hctx.drawImage(src, 0, 0, half.width, half.height);
+      src = half;
+    }
+    const ctx = c.getContext("2d");
+    ctx.imageSmoothingQuality = "high";
+    ctx.drawImage(src, 0, 0, px, px);
+  }
+}
 
 function renderPreview() {
   if (!sample) return;
-  const wrap = document.getElementById("canvasWrap");
-  const availW = wrap.clientWidth - 48;
-  const availH = wrap.clientHeight - 48;
-  const aspect = unitsH / UNITS_W;
-  let cssW = Math.min(availW, availH / aspect);
-  cssW = Math.max(100, cssW);
-  const dpr = Math.min(window.devicePixelRatio || 1, 2);
-  canvas.style.width = cssW + "px";
-  canvas.style.height = cssW * aspect + "px";
-  canvas.width = Math.round(cssW * dpr);
-  canvas.height = Math.round(cssW * aspect * dpr);
-  renderTo(canvas.getContext("2d"), canvas.width);
+  drawPreviews((ctx, w) => renderTo(ctx, w));
 }
 
 function renderOriginalPreview() {
   if (!sourceImage) return;
-  const ctx = canvas.getContext("2d");
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-  ctx.drawImage(sourceImage, 0, 0, canvas.width, canvas.height);
+  drawPreviews((ctx, w, h) => ctx.drawImage(sourceImage, 0, 0, w, h));
 }
 
 // ---------------------------------------------------------------------------

@@ -15,6 +15,10 @@ dependencies.
 1. Upload, drag & drop, or paste a photo.
 2. Click **Download PNG** to get a 2000px `twins-avatar.png`.
 
+The preview shows the avatar the way LinkedIn does: a circle at profile (160px),
+post (48px) and comment (32px) sizes. The dots only read as a face when small,
+so there's no big preview.
+
 The look is fixed on purpose so every avatar matches; there are no settings.
 The output keeps the photo's aspect ratio and is square-cornered, since
 platforms crop avatars to a circle themselves. "Hold to compare" shows the
