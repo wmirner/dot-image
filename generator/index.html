@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=56">
+<link rel="stylesheet" href="styles.css?v=57">
 </head>
 <body>
 <div class="app">
@@ -33,8 +33,7 @@
     <div class="sidebar-foot">
       <button id="generateBtn" class="btn primary generate">Shuffle</button>
 
-      <section class="export">
-        <h2>Export</h2>
+      <section class="export" aria-label="Download">
         <div class="export-row">
           <button id="exportGrid" class="btn small" title="Zip of the avatars on screen: SVGs, PNGs and codes">Download grid</button>
           <!-- one pill: the label downloads, the number inside is editable -->
@@ -43,6 +42,7 @@
             <input type="number" id="setCount" value="100" min="1" max="2000" aria-label="Number of avatars in the set">
           </span>
         </div>
+        <p class="hint export-note">Downloads a .zip with an SVG and a 1000px PNG of each avatar, plus a list of their codes.</p>
         <p class="hint status" hidden>
           <span id="exportStatus" aria-live="polite"></span>
           <button id="cancelExport" class="cancel" aria-label="Cancel download" hidden>×</button>
