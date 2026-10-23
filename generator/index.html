@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Twin Avatars</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../styles.css?v=3">
+<link rel="stylesheet" href="styles.css?v=3">
+</head>
+<body>
+<div class="app">
+
+  <aside class="sidebar">
+    <header class="brand">
+      <h1>Twin Avatars</h1>
+      <p>Generate a photo-style Twin avatar</p>
+    </header>
+
+    <section class="group">
+      <h2>Seed</h2>
+      <input type="text" id="seedInput" class="text" placeholder="Twin name, ID or #code" spellcheck="false" autocomplete="off">
+      <div class="row">
+        <button id="randomBtn" class="btn primary">Random</button>
+        <button id="copyCode" class="btn">Copy code</button>
+      </div>
+      <p class="hint">The same name or ID always gives the same avatar.</p>
+    </section>
+
+    <section class="group">
+      <h2>Parts</h2>
+      <div id="parts"></div>
+      <div class="row">
+        <button id="unlockAll" class="btn small">Unlock all</button>
+      </div>
+      <p class="hint">Pick a part to lock it. Face shape, pose and lighting vary on their own, so every avatar is unique.</p>
+    </section>
+
+    <section class="group">
+      <h2>Export</h2>
+      <div class="row">
+        <button id="exportPng" class="btn">Download PNG</button>
+        <button id="exportSvg" class="btn">Download SVG</button>
+      </div>
+      <div class="row">
+        <input type="number" id="setCount" value="100" min="1" max="2000">
+        <button id="exportSet" class="btn">Download unique set</button>
+      </div>
+      <p class="hint" id="exportStatus">A set is a .zip of SVGs and PNGs with a code list, no two alike.</p>
+    </section>
+  </aside>
+
+  <main class="stage" id="stage">
+    <div class="brand-header">
+      <span class="brand-prefix">Listen Labs /</span>
+      <span class="brand-title"> Twin Avatars</span>
+    </div>
+    <span id="dotReadout">–</span>
+    <button id="compareBtn" class="btn small">Hold to see photo</button>
+
+    <div class="scroller">
+      <section class="hero">
+        <div class="avatar-previews">
+          <figure>
+            <canvas class="avatar" id="heroCanvas" data-size="160"></canvas>
+            <figcaption>Profile</figcaption>
+          </figure>
+          <figure>
+            <canvas class="avatar" data-size="48"></canvas>
+            <figcaption>Post</figcaption>
+          </figure>
+          <figure>
+            <canvas class="avatar" data-size="32"></canvas>
+            <figcaption>Comment</figcaption>
+          </figure>
+        </div>
+        <p class="code" id="codeLabel">–</p>
+      </section>
+
+      <section class="gallery-wrap">
+        <div class="gallery-head">
+          <span>Variations</span>
+          <button id="shuffleBtn" class="btn small">Shuffle</button>
+        </div>
+        <div class="gallery" id="gallery"></div>
+      </section>
+    </div>
+  </main>
+
+</div>
+<script src="avatar.js?v=7"></script>
+<script src="app.js?v=4"></script>
+</body>
+</html>
