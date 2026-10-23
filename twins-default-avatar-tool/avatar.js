@@ -80,9 +80,9 @@ const PARTS = [
     opt("none", "None"), opt("glasses", "Glasses"), opt("shades", "Sunglasses"),
     opt("headphones", "Headphones"), opt("beanie", "Beanie"), opt("cap", "Cap") ],
     odds: {
-      fem:   [4, 2, 0.5, 0.6, 0.7, 0.4],
-      masc:  [5, 2, 0.5, 0.6, 0.7, 0.7],
-      andro: [4, 2.2, 0.5, 0.8, 0.8, 0.5],
+      fem:   [4, 2, 0.35, 0.6, 0.7, 0.4],
+      masc:  [5, 2, 0.35, 0.6, 0.7, 0.7],
+      andro: [4, 2.2, 0.35, 0.8, 0.8, 0.5],
     },
     ageMul: {
       young:  [1, 0.85, 1.2, 1.5, 1.3, 1.3],
@@ -185,6 +185,11 @@ function fromSeed(seed, { locks = {} } = {}) {
     if (p.key === "presentation" && locks.facial && locks.facial !== "none") w = w.map((x, i) => p.options[i].id === "fem" ? 0 : x);
     const mul = p.ageMul && p.ageMul[t.age];
     if (mul) w = w.map((x, i) => x * mul[i]);
+    // sunglasses over a beard or on a bald head leave little face to read
+    if (p.key === "extra") {
+      const shades = (t.facial === "beard" ? 0.15 : 1) * (t.length === "bald" ? 0.4 : 1);
+      w = w.map((x, i) => p.options[i].id === "shades" ? x * shades : x);
+    }
     const picked = weightedPick(p.options, rnd, w);
     t[p.key] = locks[p.key] || picked;
   }
@@ -334,8 +339,8 @@ const HEADS = {
   long:  { rx: 134, ry: 186, n: 2.4 },
 };
 // lifted so deeper skin keeps visible shading instead of a solid silhouette
-const SKIN = { 1: 0.94, 2: 0.86, 3: 0.76, 4: 0.65, 5: 0.53 };
-const HAIR_LUM = { dark: 0.07, mid: 0.28, light: 0.66 };
+const SKIN = { 1: 0.88, 2: 0.82, 3: 0.74, 4: 0.65, 5: 0.53 };
+const HAIR_LUM = { dark: 0.07, mid: 0.28, light: 0.52 };   // light kept clear of the wall
 const TOP_LUM = { white: 0.95, light: 0.78, mid: 0.52, dark: 0.26, black: 0.1 };
 const YAW = { l2: -0.32, l1: -0.15, front: 0, r1: 0.15, r2: 0.32 };
 const LIGHTS = {
@@ -560,7 +565,7 @@ function scene(t) {
   }
   // a little shading toward the edge of the face, as in a photo, so light
   // faces keep their outline against a light wall
-  layer(head, 4, (x, y, d) => skin * faceShade(x, y) * (1 - 0.3 * sstep(-60, 0, d)));
+  layer(head, 4, (x, y, d) => skin * faceShade(x, y) * (1 - 0.45 * sstep(-90, 0, d)));
 
   // facial features darken / lighten the skin in place
   // `feature` ops (eyes, brows, nose, mouth) are diffused after rendering

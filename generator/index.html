@@ -2,78 +2,13 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Listen Twins Avatar Tool</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=59">
+<title>Twins Default Avatar Tool</title>
+<!-- moved: keep old links working -->
+<meta http-equiv="refresh" content="0; url=../twins-default-avatar-tool/">
+<link rel="canonical" href="../twins-default-avatar-tool/">
+<script>location.replace("../twins-default-avatar-tool/" + location.search + location.hash);</script>
 </head>
 <body>
-<div class="app">
-
-  <aside class="sidebar">
-    <div class="sidebar-body">
-      <h1>Listen Twins Avatar Tool</h1>
-
-      <section class="group">
-        <p class="hint parts-hint">Choose traits to give every avatar in the grid. Anything left on All stays random.</p>
-        <div id="parts"></div>
-        <button id="unlockAll" class="btn outline reset">Reset all</button>
-      </section>
-
-      <div class="restore">
-        <label for="seedInput">Have a code?</label>
-        <p class="hint restore-hint" id="codeHint">Each avatar's code is shown under it. Paste one here to bring back that exact avatar.</p>
-        <input aria-describedby="codeHint" type="text" id="seedInput" class="field" placeholder="Paste a code, e.g. #2HTT65WLK" spellcheck="false" autocomplete="off">
-      </div>
-
-      <button id="generateBtn" class="btn primary generate">Shuffle</button>
-    </div>
-
-    <!-- pinned: downloads stay visible while the options scroll -->
-    <div class="sidebar-foot">
-      <section class="export" aria-label="Download">
-        <div class="export-row">
-          <button id="exportGrid" class="btn small" title="Zip of the avatars on screen: SVGs, PNGs and codes">Download grid</button>
-          <!-- one pill: the label downloads, the number inside is editable -->
-          <span class="set-pill" title="Zip of that many new, unique avatars">
-            <button id="exportSet" class="set-btn">Download set of</button>
-            <input type="number" id="setCount" value="100" min="1" max="2000" aria-label="Number of avatars in the set">
-          </span>
-        </div>
-        <p class="hint export-note">Downloads a .zip with an SVG and a 1000px PNG of each avatar, plus a list of their codes.</p>
-        <p class="hint status" hidden>
-          <span id="exportStatus" aria-live="polite"></span>
-          <button id="cancelExport" class="cancel" aria-label="Cancel download" hidden>×</button>
-        </p>
-      </section>
-    </div>
-  </aside>
-
-  <main class="stage">
-    <div class="stage-head">
-      <div class="sizes" id="sizes" role="radiogroup" aria-label="Avatar size">
-        <button role="radio" data-size="40">40</button>
-        <button role="radio" data-size="80">80</button>
-        <button role="radio" data-size="120">120</button>
-        <button role="radio" data-size="160">160</button>
-      </div>
-      <div class="select-bar">
-        <span class="select-tools" id="selectTools" hidden>
-          <span class="sel-count" id="selCount" aria-live="polite">0 selected</span>
-          <button id="selectAll" class="link">Select all</button>
-          <button id="deselectAll" class="link">Deselect all</button>
-        </span>
-        <button id="selectToggle" class="btn small outline" aria-pressed="false">Select</button>
-      </div>
-    </div>
-    <div class="grid" id="grid"></div>
-  </main>
-
-</div>
-<div class="cursor-tip" id="cursorTip" aria-hidden="true">Copy SVG</div>
-<script src="avatar.js?v=55"></script>
-<script src="app.js?v=40"></script>
+<p>This tool has moved to <a href="../twins-default-avatar-tool/">Twins Default Avatar Tool</a>.</p>
 </body>
 </html>

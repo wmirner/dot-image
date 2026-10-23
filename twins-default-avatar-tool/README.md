@@ -1,4 +1,4 @@
-# Twin Avatars
+# Twins Default Avatar Tool
 
 Generic avatars for Twins that look like the dotted photo avatars, without a
 photo. Each avatar is a random set of traits with a short code (like
@@ -10,7 +10,7 @@ blue `#0021CC` duotone, darker = bigger) on a transparent background. Every avat
 plain wall: light by default, and mid or dark behind white and light tops,
 whichever keeps the face and hair readable.
 
-**Live:** https://wmirner.github.io/dot-image/generator/
+**Live:** https://wmirner.github.io/dot-image/twins-default-avatar-tool/
 
 ## Parts
 
