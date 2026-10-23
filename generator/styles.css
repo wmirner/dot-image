@@ -85,13 +85,12 @@ html, body { overflow: hidden; overscroll-behavior: none; }
   flex: none;
   padding: 20px 24px 24px;
   background: var(--panel);
-  /* soft lift instead of a stroke, so scrolled options pass under it */
-  box-shadow: 0 -12px 20px -12px rgba(18, 15, 8, 0.08);
+  border-top: 1px solid var(--hairline);
 }
 .sidebar-foot h2 { font-size: 13px; color: var(--text-secondary); margin-bottom: 4px; }
 .sidebar h1 { font-size: 18px; line-height: 1.35; }
 
-.group { margin-top: 32px; }
+.group { margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--hairline); }
 .group h2 { font-size: 13px; color: var(--text-secondary); margin-bottom: 12px; }
 .group-head { display: flex; justify-content: space-between; align-items: baseline; }
 
@@ -280,7 +279,7 @@ html, body { overflow: hidden; overscroll-behavior: none; }
   .app { flex-direction: column; position: static; }
   .sidebar { width: 100%; border-radius: 0 0 16px 16px; overflow: visible; }
   .sidebar-body { overflow: visible; padding: 24px 16px 16px; }
-  .sidebar-foot { padding: 16px 16px 24px; box-shadow: none; }
+  .sidebar-foot { padding: 16px 16px 24px; }
   .stage { overflow: visible; padding: 32px 16px; }
   .hero { flex-wrap: wrap; }
   .previews { gap: 12px; }
