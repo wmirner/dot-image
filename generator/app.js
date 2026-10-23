@@ -70,7 +70,8 @@ function flipTile(b, next) {
 
 // Tiles render in a random order with small random gaps, so they flip over
 // one by one as if each avatar finishes generating at its own pace
-function renderGrid() {
+// `keep`: indices to leave untouched (selected avatars during a shuffle)
+function renderGrid(keep = new Set()) {
   const g = $("grid");
   const run = ++gridRun;
   const flip = g.children.length === state.grid.length;
@@ -97,7 +98,7 @@ function renderGrid() {
       g.appendChild(tile);
     });
   }
-  const order = state.grid.map((_, i) => i).sort(() => Math.random() - 0.5);
+  const order = state.grid.map((_, i) => i).filter(i => !keep.has(i)).sort(() => Math.random() - 0.5);
   let at = 0;
   for (const i of order) {
     at += 8 + Math.random() * 24;
@@ -175,6 +176,18 @@ function setSize(size) {
       tile.firstChild.replaceChildren(c);
     }, i * 4));
   }, RESIZE_MS);
+}
+
+// In select mode, Shuffle replaces everything except the selected avatars,
+// which keep their place (and stay selected)
+function shuffleUnselected() {
+  const keep = state.selected;
+  const base = randomSeed();
+  const kept = state.grid.filter((_, i) => keep.has(i));
+  const fresh = uniqueSet(state.grid.length - keep.size, i => (base + i * 2654435761) >>> 0, kept);
+  let k = 0;
+  state.grid = state.grid.map((t, i) => keep.has(i) ? t : fresh[k++] || t);
+  renderGrid(keep);
 }
 
 // ---------------------------------------------------------------------------
@@ -269,6 +282,8 @@ function setSelecting(on) {
   $("selectTools").hidden = !on;
   // while selecting, export is about the selection, so hide the new-set pill
   document.querySelector(".set-pill").hidden = on;
+  // leaving select mode drops the selection, so nothing stays marked
+  if (!on) clearSelection();
 }
 
 function clearSelection() {
@@ -378,8 +393,8 @@ function init() {
   for (const b of $("sizes").children) b.addEventListener("click", () => setSize(+b.dataset.size));
 
   $("generateBtn").addEventListener("click", () => {
-    clearCode();
-    generate();
+    if (state.selected.size && !state.pinned) shuffleUnselected();
+    else { clearCode(); generate(); }
   });
 
   // paste an avatar code (with or without #): that exact avatar leads the grid
