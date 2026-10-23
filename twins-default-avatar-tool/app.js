@@ -210,6 +210,7 @@ function buildParts() {
       if (sel.value) state.locks[p.key] = sel.value;
       else delete state.locks[p.key];
       sel.classList.toggle("locked", !!sel.value);
+      syncFilterLabel();
       clearCode();
       generate();
     });
@@ -217,6 +218,22 @@ function buildParts() {
     row.append(name, sel);
     host.appendChild(row);
   }
+}
+
+// ---------------------------------------------------------------------------
+// Phones: filters live in a bottom sheet
+// ---------------------------------------------------------------------------
+
+function syncFilterLabel() {
+  const n = Object.keys(state.locks).length;
+  $("filterBtn").textContent = n ? `Filter · ${n}` : "Filter";
+}
+
+function setSheet(open) {
+  $("sheet").classList.toggle("open", open);
+  $("sheetBackdrop").hidden = !open;
+  if (open) $("closeSheet").focus();
+  else $("filterBtn").focus({ preventScroll: true });
 }
 
 // ---------------------------------------------------------------------------
@@ -419,6 +436,7 @@ function init() {
     if (!Object.keys(state.locks).length) return;   // nothing set: leave the grid alone
     state.locks = {};
     for (const sel of Object.values(selects)) { sel.value = ""; sel.classList.remove("locked"); }
+    syncFilterLabel();
     clearCode();
     generate();
   });
@@ -431,6 +449,14 @@ function init() {
   });
 
   $("selectToggle").addEventListener("click", () => setSelecting(!state.selecting));
+
+  $("filterBtn").addEventListener("click", () => setSheet(true));
+  $("closeSheet").addEventListener("click", () => setSheet(false));
+  $("sheetBackdrop").addEventListener("click", () => setSheet(false));
+  document.addEventListener("keydown", e => {
+    if (e.key === "Escape" && $("sheet").classList.contains("open")) setSheet(false);
+  });
+  $("shuffleMobile").addEventListener("click", () => $("generateBtn").click());
   $("selectAll").addEventListener("click", () => {
     state.grid.forEach((_, i) => state.selected.add(i));
     syncSelection();
