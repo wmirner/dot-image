@@ -1,89 +1,290 @@
-/* Twin Avatars — layered on the photo tool's styles.css */
+/* Twin Avatars — Inter 400 only; no letter-spacing, all-caps or strokes.
+ * Fields and buttons are filled pills; the one hairline is the divider. */
 
-.stage { padding-top: 0; }
+:root {
+  --panel: #FBF9F4;          /* surface-highlight */
+  --stage: #F9F4EB;          /* surface-primary beige */
+  --fill: #F3EEE4;          /* light beige */
+  --fill-hover: #EEE8DD;    /* surface-secondary */
+  --placeholder: #EEE8DD;    /* surface-secondary */
+  --text: #120F08;
+  --text-secondary: #6B6861;
+  --hairline: #E2DCCF;
+  --brand: #0021CC;
+  --brand-hover: #0019A3;
+  --brand-tint: #E6E9FA;
+  --on-brand: #FFFFFF;
+  --sidebar-w: 332px;   /* fits the longest part label, "Random · Androgynous" */
+}
 
-.scroller {
+@media (prefers-color-scheme: dark) {
+  :root {
+    --panel: #1A1A1A;
+    --stage: #130F06;
+    --fill: #201C13;
+    --fill-hover: #30291D;
+    --placeholder: #201C13;
+    --text: #F9F4EB;
+    --text-secondary: #9E9B94;
+    --hairline: #30291D;
+    --brand: #3354FF;
+    --brand-hover: #4D6AFF;
+    --brand-tint: #1A2050;
+  }
+}
+
+* { box-sizing: border-box; }
+
+/* The page background itself is painted as the two panels, so the sidebar
+   color always reaches the bottom of the window, whatever height the
+   browser reports for the layout. */
+html {
+  background: linear-gradient(90deg, var(--panel) 0 var(--sidebar-w), var(--stage) var(--sidebar-w));
+}
+html, body {
+  margin: 0;
+  height: 100%;
+  color: var(--text);
+  font-family: 'Inter', sans-serif;
+  font-weight: 400;
+  font-size: 13px;
+  line-height: 1.5;
+}
+body { background: transparent; }
+
+h1, h2, button, input, select { font: inherit; font-weight: 400; color: inherit; }
+h1, h2, p { margin: 0; }
+
+/* desktop: the page itself never scrolls; the layout is pinned to the
+   window edges and only the sidebar options and the stage scroll inside */
+.app { display: flex; position: fixed; inset: 0; }
+html, body { overflow: hidden; overscroll-behavior: none; }
+
+/* ---------- Sidebar ---------- */
+
+/* options scroll; export stays pinned at the bottom */
+.sidebar {
+  width: var(--sidebar-w);
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--panel);
+  border-radius: 0 16px 0 0;
+  box-shadow: 0 0 24px rgba(18, 15, 8, 0.04);
+  position: relative;
+  z-index: 1;
+}
+.sidebar-body {
   flex: 1;
+  min-height: 0;
   overflow-y: auto;
-  padding: 64px 24px 32px;
+  padding: 32px 24px 24px;
 }
+.sidebar-foot {
+  flex: none;
+  padding: 20px 24px 24px;
+  background: var(--panel);
+  /* soft lift instead of a stroke, so scrolled options pass under it */
+  box-shadow: 0 -12px 20px -12px rgba(18, 15, 8, 0.08);
+}
+.sidebar-foot h2 { font-size: 13px; color: var(--text-secondary); margin-bottom: 4px; }
+.sidebar h1 { font-size: 18px; line-height: 1.35; }
 
-input.text {
+.group { margin-top: 32px; }
+.group h2 { font-size: 13px; color: var(--text-secondary); margin-bottom: 12px; }
+.group-head { display: flex; justify-content: space-between; align-items: baseline; }
+
+.row { display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
+.hint { color: var(--text-secondary); font-size: 12px; margin-top: 12px; }
+
+.field, .part select {
+  height: 36px;
   width: 100%;
-  height: 32px;
-  background: var(--surface-highlight);
-  color: var(--content-primary);
-  border: 1px solid var(--surface-tertiary);
-  border-radius: 4px;
-  padding: 0 8px;
-  font: inherit;
-  font-size: 12px;
+  border: none;
+  border-radius: 999px;
+  background: var(--fill);
+  padding: 0 16px;
+  outline: none;
 }
-input.text:focus, select:focus { outline: 1px solid var(--content-brand); outline-offset: -1px; }
+.field::placeholder { color: var(--text-secondary); }
+.field:focus-visible, .part select:focus-visible, .btn:focus-visible, .link:focus-visible {
+  box-shadow: 0 0 0 2px var(--brand);
+}
+.field.count { width: 80px; text-align: center; padding: 0 8px; }
 
 .part {
   display: grid;
-  grid-template-columns: 88px 1fr;
+  grid-template-columns: 80px 1fr;
   align-items: center;
   gap: 8px;
-  margin: 8px 0;
+  margin-bottom: 6px;
 }
-.part span { color: var(--content-secondary); }
-.part select { height: 28px; }
-.part select.locked { border-color: var(--content-brand); color: var(--content-brand); }
+.part span { color: var(--text-secondary); }
+.part select {
+  height: 32px;
+  appearance: none;
+  cursor: pointer;
+  /* chevron sits 16px from the right edge, matching the 16px text inset
+     on the left, so the pill's padding is even on both sides */
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%236B6861' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 16px center;
+  padding: 0 34px 0 16px;
+  text-overflow: ellipsis;
+}
+.part select:hover { background-color: var(--fill-hover); }
+.part select.locked { background-color: var(--brand-tint); color: var(--brand); }
 
-.check { margin-top: 12px; }
+.btn {
+  height: 36px;
+  border: none;
+  border-radius: 999px;
+  background: var(--fill);
+  padding: 0 16px;
+  cursor: pointer;
+  transition: background-color 120ms;
+}
+.btn:hover { background: var(--fill-hover); }
+.btn:disabled { color: var(--text-secondary); cursor: default; }
+.btn.primary { background: var(--brand); color: var(--on-brand); }
+.btn.primary:hover { background: var(--brand-hover); }
 
-/* ---------- Hero ---------- */
+.link {
+  border: none;
+  background: none;
+  padding: 0;
+  color: var(--text-secondary);
+  cursor: pointer;
+  border-radius: 4px;
+}
+.link:hover { color: var(--text); }
+
+/* ---------- Stage ---------- */
+
+.stage {
+  flex: 1;
+  min-width: 0;
+  overflow-y: auto;
+  padding: 52px 56px 48px;
+  background: var(--stage);
+}
 
 .hero {
   display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 16px;
-  padding: 24px 0 40px;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
 }
+
+/* the previews are one button: clicking an avatar copies its SVG */
+.previews {
+  display: flex;
+  align-items: flex-end;
+  gap: 20px;
+  border: none;
+  background: none;
+  padding: 0;
+  cursor: pointer;
+  border-radius: 16px;
+}
+.previews:focus-visible { outline: none; box-shadow: 0 0 0 2px var(--brand); }
+.avatar { display: block; border-radius: 50%; background: var(--placeholder); transition: transform 160ms ease-out; }
+.previews .avatar:hover { transform: scale(1.06); }
+/* avatars are transparent; the fill only holds the spot while rendering */
+.avatar.ready, .gallery button.ready { background: transparent; }
+
+.code-wrap { position: relative; display: flex; flex-direction: column; align-items: flex-end; }
 .code {
-  margin: 0;
-  color: var(--content-secondary);
+  font-size: 20px;
   font-variant-numeric: tabular-nums;
+  border: none;
+  background: none;
+  padding: 4px 10px;
+  margin: -4px -10px;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background-color 120ms;
 }
-
-/* ---------- Gallery ---------- */
-
-.gallery-wrap {
-  max-width: 880px;
-  margin: 0 auto;
+.code:hover { background: var(--placeholder); }
+.code:focus-visible { outline: none; box-shadow: 0 0 0 2px var(--brand); }
+.copied {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 8px;
+  white-space: nowrap;
+  font-size: 12px;
+  color: var(--brand);
+  opacity: 0;
+  transform: translateY(-4px);
+  transition: opacity 160ms, transform 160ms;
 }
+.copied.show { opacity: 1; transform: none; }
+
+/* bubble that follows the cursor over the avatars and the code */
+.cursor-tip {
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 10;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--text);
+  color: var(--panel);
+  font-size: 12px;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 120ms;
+}
+.cursor-tip.show { opacity: 1; }
+
+.divider { height: 1px; background: var(--hairline); margin: 48px 0 40px; }
+
 .gallery-head {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  color: var(--content-secondary);
-  padding-bottom: 12px;
-  border-bottom: 1px solid var(--surface-tertiary);
-  margin-bottom: 16px;
+  margin-bottom: 24px;
 }
+.gallery-head h2 { font-size: 13px; }   /* same as the Shuffle button */
+
 .gallery {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+  grid-template-columns: repeat(8, 1fr);
   gap: 16px;
-  justify-items: center;
 }
 .gallery button {
+  aspect-ratio: 1;
+  width: 100%;
   padding: 0;
   border: none;
-  background: none;
   border-radius: 50%;
+  background: var(--placeholder);
   cursor: pointer;
-  outline-offset: 4px;
 }
-.gallery button:hover { outline: 1px solid var(--surface-tertiary); }
-.gallery button.active { outline: 2px solid var(--content-brand); }
-.gallery canvas { display: block; border-radius: 50%; }
+.gallery button:focus-visible { box-shadow: 0 0 0 2px var(--brand); outline: none; }
+.gallery button.active { box-shadow: 0 0 0 2px var(--stage), 0 0 0 4px var(--brand); }
+/* scale the canvas, not the button, so hover doesn't fight the flip */
+.gallery canvas { display: block; width: 100%; height: 100%; border-radius: 50%; transition: transform 160ms ease-out; }
+.gallery button:hover canvas { transform: scale(1.06); }
+
+@media (max-width: 1100px) {
+  .gallery { grid-template-columns: repeat(6, 1fr); }
+}
 
 @media (max-width: 760px) {
-  #dotReadout { display: none; }
-  .scroller { padding: 56px 16px 24px; }
-  .gallery { grid-template-columns: repeat(auto-fill, minmax(64px, 1fr)); gap: 12px; }
+  html { background: var(--stage); }
+  html, body { overflow: visible; }
+  .app { flex-direction: column; position: static; }
+  .sidebar { width: 100%; border-radius: 0 0 16px 16px; overflow: visible; }
+  .sidebar-body { overflow: visible; padding: 24px 16px 16px; }
+  .sidebar-foot { padding: 16px 16px 24px; box-shadow: none; }
+  .stage { overflow: visible; padding: 32px 16px; }
+  .hero { flex-wrap: wrap; }
+  .previews { gap: 12px; }
+  .code { font-size: 16px; }
+  .divider { margin: 32px 0 24px; }
+  .gallery { grid-template-columns: repeat(4, 1fr); gap: 12px; }
 }

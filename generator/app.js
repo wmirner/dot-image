@@ -4,7 +4,6 @@
 
 const A = window.TwinAvatar;
 const GALLERY_SIZE = 40;
-const TILE = 80;
 const EXPORT_PX = 2000;
 const SET_PX = 1000;
 const JSZIP_URL = "https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js";
@@ -51,52 +50,75 @@ function renderHero() {
   const list = A.dots(state.current);
   for (const c of document.querySelectorAll(".hero canvas[data-size]")) {
     drawScaled(c, parseInt(c.dataset.size), list);
+    c.classList.add("ready");
   }
-  $("codeLabel").textContent = "#" + A.encode(state.current);
+  const code = "#" + A.encode(state.current);
+  $("codeLabel").textContent = code;
+  $("codeLabel").setAttribute("aria-label", "Copy avatar code " + code);
   syncPartLabels();
   for (const [i, b] of [...$("gallery").children].entries()) {
     b.classList.toggle("active", A.encode(state.gallery[i]) === A.encode(state.current));
   }
 }
 
-// The synthetic grayscale photo the dots are sampled from
-function drawSource(canvas, size, t) {
-  const dpr = Math.min(window.devicePixelRatio || 1, 2);
-  const px = Math.round(size * dpr);
-  const { lum, size: n } = A.portrait(t);
-  const img = new ImageData(n, n);
-  for (let i = 0; i < n * n; i++) {
-    const v = Math.round(lum[i] * 255);
-    img.data[i * 4] = img.data[i * 4 + 1] = img.data[i * 4 + 2] = v;
-    img.data[i * 4 + 3] = 255;
-  }
-  const src = document.createElement("canvas");
-  src.width = src.height = n;
-  src.getContext("2d").putImageData(img, 0, 0);
-  canvas.width = canvas.height = px;
-  const ctx = canvas.getContext("2d");
-  ctx.imageSmoothingQuality = "high";
-  ctx.drawImage(src, 0, 0, px, px);
+const FLIP_MS = 380;
+const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)");
+let galleryRun = 0;
+
+// Coin flip: turn edge-on, swap in the new face, turn back
+function flipTile(b, next) {
+  if (reduceMotion.matches) { b.replaceChildren(next); return; }
+  const half = FLIP_MS / 2;
+  const out = b.animate([
+    { transform: "perspective(320px) rotateY(0deg) scale(1)" },
+    { transform: "perspective(320px) rotateY(90deg) scale(1.08)" },
+  ], { duration: half, easing: "cubic-bezier(.55, 0, 1, .45)", fill: "forwards" });
+  out.onfinish = () => {
+    b.replaceChildren(next);
+    out.cancel();
+    b.animate([
+      { transform: "perspective(320px) rotateY(-90deg) scale(1.08)" },
+      { transform: "perspective(320px) rotateY(0deg) scale(1)" },
+    ], { duration: half, easing: "cubic-bezier(0, .55, .45, 1)" });
+  };
 }
 
+// Tiles render in a random order with small random gaps, so they flip over
+// one by one as if each avatar finishes generating at its own pace
 function renderGallery() {
   const g = $("gallery");
-  g.replaceChildren();
-  state.gallery.forEach((t, i) => {
-    const b = document.createElement("button");
-    b.title = "#" + A.encode(t);
-    const c = document.createElement("canvas");
-    b.appendChild(c);
-    b.addEventListener("click", () => {
-      state.current = { ...t };
-      state.seed = "#" + A.encode(t);
-      $("seedInput").value = state.seed;
-      renderHero();
+  const run = ++galleryRun;
+  const flip = g.children.length === state.gallery.length;
+  if (!flip) {
+    g.replaceChildren();
+    state.gallery.forEach((_, i) => {
+      const b = document.createElement("button");
+      b.addEventListener("click", () => {
+        const t = state.gallery[i];
+        state.current = { ...t };
+        state.seed = "#" + A.encode(t);
+        $("seedInput").value = state.seed;
+        renderHero();
+      });
+      g.appendChild(b);
     });
-    g.appendChild(b);
-    // spread the work over frames so the page stays responsive
-    requestAnimationFrame(() => drawScaled(c, TILE, A.dots(t)));
-  });
+  }
+  const order = state.gallery.map((_, i) => i).sort(() => Math.random() - 0.5);
+  let at = 0;
+  for (const i of order) {
+    at += 8 + Math.random() * 30;
+    setTimeout(() => {
+      if (run !== galleryRun) return;
+      const t = state.gallery[i], b = g.children[i];
+      const c = document.createElement("canvas");
+      drawScaled(c, b.clientWidth || 80, A.dots(t, A.portrait(t, { res: 125 })));
+      c.style.width = c.style.height = "";   // let the grid size it
+      b.classList.add("ready");
+      b.title = "#" + A.encode(t);
+      if (flip) flipTile(b, c);
+      else b.replaceChildren(c);
+    }, at);
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -110,7 +132,11 @@ function traitsForSeed(seed) {
 }
 
 function applyLocks(t) {
-  return { ...t, ...state.locks };
+  const out = { ...t, ...state.locks };
+  // same rule as fromSeed: facial hair locked on its own steers presentation
+  // away from Feminine
+  if (out.facial !== "none" && out.presentation === "fem" && !state.locks.presentation) out.presentation = "andro";
+  return out;
 }
 
 // Unique variations: no two tiles look the same
@@ -156,7 +182,7 @@ function buildParts() {
     const name = document.createElement("span");
     name.textContent = p.label;
     const sel = document.createElement("select");
-    sel.appendChild(new Option("Auto", ""));
+    sel.appendChild(new Option("Random", ""));
     for (const o of p.options) sel.appendChild(new Option(o.label, o.id));
     sel.addEventListener("change", () => {
       if (sel.value) state.locks[p.key] = sel.value;
@@ -172,18 +198,13 @@ function buildParts() {
   }
 }
 
-// "Auto" shows what auto picked for the current avatar
+// "Random" shows what the seed picked for the current avatar
 function syncPartLabels() {
   for (const p of A.PARTS.filter(p => !p.hidden)) {
     const sel = selects[p.key];
     const o = p.options.find(o => o.id === state.current[p.key]);
-    sel.options[0].textContent = "Auto · " + (o ? o.label : "–");
+    sel.options[0].textContent = "Random · " + (o ? o.label : "–");
   }
-}
-
-function updateReadout() {
-  $("dotReadout").textContent =
-    A.comboCount().toLocaleString() + " combinations";
 }
 
 // ---------------------------------------------------------------------------
@@ -252,13 +273,47 @@ async function exportSet() {
   }
 }
 
+// Brief note under the code after copying
+let copiedTimer = 0;
+function showNote(msg) {
+  const note = $("copiedNote");
+  note.textContent = msg;
+  note.classList.add("show");
+  clearTimeout(copiedTimer);
+  copiedTimer = setTimeout(() => note.classList.remove("show"), 1600);
+}
+
+// When the cursor bubble is up, it confirms the copy in place; otherwise
+// (sidebar button, keyboard) the note under the code does
+let tipTimer = 0;
+async function copyText(text, done) {
+  let msg = done;
+  try { await navigator.clipboard.writeText(text); }
+  catch { msg = "Couldn't copy"; }
+  const tip = $("cursorTip");
+  if (tip.classList.contains("show")) {
+    tip.textContent = msg;
+    clearTimeout(tipTimer);
+    tipTimer = setTimeout(() => { tip.textContent = tip.dataset.label; }, 1400);
+  } else {
+    showNote(msg);
+  }
+}
+
+const copyCode = () => copyText("#" + A.encode(state.current), "Avatar code copied");
+// SVG as text pastes straight into Figma and code as vectors, at the size
+// of the preview that was clicked (160, 80 or 40)
+const copySvg = e => {
+  const size = parseInt(e.target.closest("canvas")?.dataset.size) || 160;
+  copyText(A.svg(state.current, { size }), `SVG copied at ${size}px`);
+};
+
 // ---------------------------------------------------------------------------
 // Wiring
 // ---------------------------------------------------------------------------
 
 function init() {
   buildParts();
-  updateReadout();
 
   $("seedInput").addEventListener("input", e => {
     state.seed = e.target.value.trim();
@@ -269,11 +324,24 @@ function init() {
     $("seedInput").value = "";
     updateCurrent();
   });
-  $("copyCode").addEventListener("click", async () => {
-    const code = "#" + A.encode(state.current);
-    try { await navigator.clipboard.writeText(code); setStatus("Copied " + code); }
-    catch { setStatus(code); }
-  });
+  $("copyCode").addEventListener("click", copyCode);
+  $("codeLabel").addEventListener("click", copyCode);
+  $("copySvg").addEventListener("click", copySvg);
+  // a bubble rides along with the cursor over the top avatars and the code
+  const tip = $("cursorTip");
+  const follow = (el, label) => {
+    el.addEventListener("pointerenter", () => {
+      clearTimeout(tipTimer);
+      tip.textContent = tip.dataset.label = label;
+    });
+    el.addEventListener("pointermove", e => {
+      tip.style.transform = `translate(${e.clientX + 14}px, ${e.clientY + 18}px)`;
+      tip.classList.add("show");
+    });
+    el.addEventListener("pointerleave", () => tip.classList.remove("show"));
+  };
+  for (const c of document.querySelectorAll(".hero .avatar")) follow(c, "Copy SVG");
+  follow($("codeLabel"), "Copy code");
   $("unlockAll").addEventListener("click", () => {
     state.locks = {};
     for (const sel of Object.values(selects)) { sel.value = ""; sel.classList.remove("locked"); }
@@ -281,13 +349,6 @@ function init() {
     shuffleGallery();
   });
   $("shuffleBtn").addEventListener("click", shuffleGallery);
-  const showSource = on => {
-    if (on) for (const c of document.querySelectorAll(".hero canvas[data-size]")) drawSource(c, parseInt(c.dataset.size), state.current);
-    else renderHero();
-  };
-  const cmp = $("compareBtn");
-  cmp.addEventListener("pointerdown", () => showSource(true));
-  for (const ev of ["pointerup", "pointerleave", "pointercancel"]) cmp.addEventListener(ev, () => showSource(false));
   $("exportPng").addEventListener("click", async () => {
     download(await pngBlob(state.current, EXPORT_PX), fileName(state.current) + ".png");
   });
