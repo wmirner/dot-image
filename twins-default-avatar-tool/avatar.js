@@ -455,7 +455,8 @@ function scene(t) {
   const edge = {
     wavy:  (x, y) => 20 * Math.sin((x + y * 0.6) / 32),
     curly: (x, y) => 46 * (vnoise(x / 30, y / 30, seed + 11) - 0.25),
-    coily: (x, y) => 14 + 12 * vnoise(x / 22, y / 22, seed + 11),
+    // scalloped at a scale the dots can show, so it reads as curls, not a dome
+    coily: (x, y) => 10 + 44 * (vnoise(x / 40, y / 40, seed + 11) - 0.3),
   }[t.texture];
   if (edge && style !== "buzz" && style !== "none") {
     for (const k of ["back", "front"]) {
@@ -489,10 +490,13 @@ function scene(t) {
     if (style === "locs") grain = 0.06 * Math.sin((x - cx) / 9) + 0.03 * (vnoise(x / 9, y / 40, seed) - 0.5);
     else if (t.texture === "wavy") grain = 0.13 + 0.13 * Math.sin(y / 26 + 0.9 * Math.sin(x / 40));
     else if (t.texture === "curly") grain = 0.7 * Math.max(0, vnoise(x / 28, y / 28, seed) - 0.38);
-    else if (t.texture === "coily") grain = 0.32 * Math.max(0, vnoise(x / 16, y / 16, seed) - 0.45);
+    else if (t.texture === "coily") grain = 0.6 * Math.max(0, vnoise(x / 34, y / 34, seed) - 0.42);
     else grain = 0.01 * (vnoise(x / 40, y / 9, seed) - 0.5);
-    const sheen = t.texture !== "straight" || hairLum > 0.5 ? 0 :
-      0.32 * gauss(x - (cx + lightSide * rx * 0.4), y - (cy - ry * 0.68), rx * 0.42, ry * 0.15);
+    // straight hair gets a narrow shine band; textured hair a broad, soft
+    // highlight on the lit side, so dark curls show volume instead of a flat dome
+    const sheen = hairLum > 0.5 ? 0 : t.texture === "straight"
+      ? 0.32 * gauss(x - (cx + lightSide * rx * 0.4), y - (cy - ry * 0.68), rx * 0.42, ry * 0.15)
+      : 0.2 * gauss(x - (cx + lightSide * rx * 0.55), y - (cy - ry * 0.75), rx * 0.55, ry * 0.32);
     return clamp01(hairLum * (0.45 + 0.6 * s) + grain + sheen);
   };
 
@@ -566,7 +570,11 @@ function scene(t) {
   }
   // a little shading toward the edge of the face, as in a photo, so light
   // faces keep their outline against a light wall
-  layer(head, 4, (x, y, d) => skin * faceShade(x, y) * (1 - 0.45 * sstep(-90, 0, d)));
+  // deeper skin catches broad highlights on the forehead and cheekbones in
+  // photos; without them the face merges with dark hair into one mass
+  const sheenK = 0.22 * clamp01((0.82 - skin) / 0.3);
+  const faceSheen = (x, y) => sheenK * gauss(x - (cx + lightSide * rx * 0.25), y - (cy - ry * 0.1), rx * 0.5, ry * 0.55);
+  layer(head, 4, (x, y, d) => clamp01(skin * faceShade(x, y) * (1 - 0.45 * sstep(-90, 0, d)) + faceSheen(x, y)));
 
   // facial features darken / lighten the skin in place
   // `feature` ops (eyes, brows, nose, mouth) are diffused after rendering
@@ -780,7 +788,7 @@ const HAIR = {
       const a = Math.PI * (1.08 + k * 0.105);
       bumps.push(circle(hx + Math.cos(a) * rx * 0.98, hy - ry * 0.1 + Math.sin(a) * ry * 0.92, rx * 0.3));
     }
-    return { back: union(...bumps), front: union(cap(18, 0.32, 0.4), ...bumps.slice(2, 7)) };
+    return { back: union(...bumps), front: union(cap(16, 0.42, 0.45), ...bumps.slice(2, 7)) };
   },
   afro: ({ hx, hy, rx, ry, cap }) => ({
     back: circle(hx, hy - ry * 0.3, Math.max(rx, ry) * 1.18),
@@ -901,7 +909,7 @@ const HAIR = {
       const a = Math.PI * (0.78 + k * 0.12);
       bumps.push(circle(hx + Math.cos(a) * rx * 1.08, hy - ry * 0.05 + Math.sin(a) * ry * 1.0, rx * 0.34));
     }
-    return { back: union(...bumps), front: union(cap(18, 0.32, 0.4), ...bumps.slice(3, 10)) };
+    return { back: union(...bumps), front: union(cap(16, 0.42, 0.45), ...bumps.slice(3, 10)) };
   },
 
   // --- long ---
