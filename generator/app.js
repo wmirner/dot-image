@@ -314,6 +314,7 @@ const copySvg = e => {
 
 function init() {
   buildParts();
+  $("dotReadout").textContent = A.comboCount().toLocaleString() + " combinations";
 
   $("seedInput").addEventListener("input", e => {
     state.seed = e.target.value.trim();

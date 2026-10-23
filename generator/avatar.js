@@ -119,10 +119,10 @@ const STYLES = {
     coily:    ["afro", "puffs", "curly", "curlyBob"],
   },
   long: {
-    straight: ["long", "pony", "bangsLong"],   // sideLong reads too close to bangs here
-    wavy:     ["wavy", "pony", "sideLong", "wavyBangs"],
-    curly:    ["bigCurls", "pony", "sideLong", "curlyBob"],
-    coily:    ["locs", "bigCurls", "afro", "pony"],
+    straight: ["long", "bangsLong", "sideLong"],
+    wavy:     ["wavy", "sideLong", "wavyBangs", "pony"],   // pony kept rare
+    curly:    ["bigCurls", "sideLong", "curlyBob"],
+    coily:    ["locs", "bigCurls", "afro"],
   },
 };
 const CUTS = "abcdefgh";
@@ -266,6 +266,14 @@ function blob(cx, cy, rx, ry, n = 2) {
     const u = Math.abs(x - cx) / rx, v = Math.abs(y - cy) / ry;
     const k = n === 2 ? hyp(u, v) : Math.pow(Math.pow(u, n) + Math.pow(v, n), 1 / n);
     return (k - 1) * m;
+  };
+}
+// capsule whose radius goes from r0 at a to r1 at b
+function taper(ax, ay, bx, by, r0, r1) {
+  const dx = bx - ax, dy = by - ay, dd = dx * dx + dy * dy || 1;
+  return (x, y) => {
+    const h = Math.max(0, Math.min(1, ((x - ax) * dx + (y - ay) * dy) / dd));
+    return hyp(x - ax - dx * h, y - ay - dy * h) - (r0 + (r1 - r0) * h);
   };
 }
 function capsule(ax, ay, bx, by, r) {
@@ -725,11 +733,18 @@ const HAIR = {
     const b = HAIR.bob(g);
     return { back: (x, y) => b.back(x, y) - 12 * Math.sin(y / 26), front: b.front };
   },
-  pony: ({ hx, hy, rx, ry, cap, side }) => ({
-    back: union(circle(hx - side * rx * 1.02, hy - ry * 0.42, rx * 0.32),
-      capsule(hx - side * rx * 1.1, hy - ry * 0.3, hx - side * rx * 1.18, hy + ry * 0.6, rx * 0.2)),
-    front: cap(16, 0.4, 0.45),
-  }),
+  // pulled back, with a thick tapered tail falling forward over one
+  // shoulder (a thin strand beside the head read as a hook)
+  pony: ({ hx, hy, rx, ry, cap, side }) => {
+    const s = -side;
+    const tail = union(
+      taper(hx + s * rx * 0.9, hy + ry * 0.1, hx + s * rx * 1.04, hy + ry * 0.75, rx * 0.3, rx * 0.26),
+      taper(hx + s * rx * 1.04, hy + ry * 0.75, hx + s * rx * 0.88, hy + ry * 1.45, rx * 0.26, rx * 0.12));
+    return {
+      back: circle(hx + s * rx * 0.62, hy - ry * 0.45, rx * 0.42),
+      front: union(cap(14, 0.4, 0.45), minus(tail, blob(hx, hy + ry * 0.08, rx * 0.94, ry * 1.0))),
+    };
+  },
 
   // --- short ---
   // tight sides, volume on top
