@@ -80,9 +80,9 @@ const PARTS = [
     opt("none", "None"), opt("glasses", "Glasses"), opt("shades", "Sunglasses"),
     opt("headphones", "Headphones"), opt("beanie", "Beanie"), opt("cap", "Cap") ],
     odds: {
-      fem:   [4, 2, 0.35, 0.6, 0.7, 0.4],
-      masc:  [5, 2, 0.35, 0.6, 0.7, 0.7],
-      andro: [4, 2.2, 0.35, 0.8, 0.8, 0.5],
+      fem:   [4, 2, 0.35, 0.6, 0.45, 0.4],
+      masc:  [5, 2, 0.35, 0.6, 0.45, 0.7],
+      andro: [4, 2.2, 0.35, 0.8, 0.5, 0.5],
     },
     ageMul: {
       young:  [1, 0.85, 1.2, 1.5, 1.3, 1.3],
@@ -110,7 +110,8 @@ const STYLES = {
     straight: ["crop", "part", "quiff", "buzz", "undercut", "pixie"],
     wavy:     ["part", "quiff", "crop", "undercut", "pixie", "spiky"],
     curly:    ["curly", "curlyTop", "part", "crop"],
-    coily:    ["hightop", "buzz", "curlyTop", "spiky"],
+    // high top last in a longer list, so it's ~1 in 8 short coily cuts
+    coily:    ["curlyTop", "buzz", "curly", "curlyTop", "buzz", "hightop"],
   },
   medium: {
     // bun is last in one list only, so it's an occasional look (~1%)
@@ -454,7 +455,7 @@ function scene(t) {
   const edge = {
     wavy:  (x, y) => 20 * Math.sin((x + y * 0.6) / 32),
     curly: (x, y) => 46 * (vnoise(x / 30, y / 30, seed + 11) - 0.25),
-    coily: (x, y) => 26 + 16 * vnoise(x / 22, y / 22, seed + 11),
+    coily: (x, y) => 14 + 12 * vnoise(x / 22, y / 22, seed + 11),
   }[t.texture];
   if (edge && style !== "buzz" && style !== "none") {
     for (const k of ["back", "front"]) {
@@ -723,12 +724,14 @@ function scene(t) {
     layer(cups, 4, (x, y) => 0.08 + 0.16 * shadeEllipsoid(x, y, x < cx ? cx - rx : cx + rx, ey, 40, 60, LV, amb));
   }
   if (t.extra === "beanie") {
-    const knit = topLum > 0.5 ? 0.22 : 0.72;
-    const hat = inter(grow(head, 22), above(cy - ry * 0.42));
-    layer(union(hat, blob(cx, cy - ry - 4, rx * 0.6, ry * 0.18)), 5, (x, y) =>
-      clamp01(knit * (0.5 + 0.6 * shadeEllipsoid(x, y, cx, cy - ry * 0.4, rx * 1.15, ry * 0.9, LV, amb)) + 0.05 * Math.sin(x / 7)));
-    layer(inter(grow(head, 26), above(cy - ry * 0.42), below(cy - ry * 0.6)), 4, (x, y) =>
-      knit * 0.8 * (0.5 + 0.6 * faceShade(x, y)));
+    // a knit hat that sits above the brows, with a ribbed cuff, in a shade
+    // that contrasts with the hair (a dark hat on dark hair read as a helmet)
+    const knit = hairLum < 0.4 ? 0.66 : 0.18;
+    const shade = (x, y) => 0.55 + 0.55 * shadeEllipsoid(x, y, cx, cy - ry * 0.6, rx * 1.1, ry * 0.8, LV, amb);
+    const crown = union(inter(grow(head, 14), above(cy - ry * 0.5)), blob(cx, cy - ry * 0.92, rx * 0.86, ry * 0.26));
+    layer(crown, 5, (x, y) => clamp01(knit * shade(x, y) + 0.04 * Math.sin(y / 9)));
+    layer(inter(grow(head, 20), above(cy - ry * 0.48), below(cy - ry * 0.68)), 4, (x, y) =>
+      clamp01(knit * 0.85 * shade(x, y) + 0.07 * Math.sin(x / 6)));
   }
   if (t.extra === "cap") {
     const capLum = topLum > 0.5 ? 0.18 : 0.8;
@@ -768,7 +771,8 @@ const HAIR = {
       inter(blob(hx + side * rx * 0.42, hy - ry * 0.8, rx * 0.72, ry * 0.42), above(hy - ry * 0.28))),
   }),
   quiff: ({ hx, hy, rx, ry, cap, side }) => ({
-    front: union(cap(16, 0.44, 0.5), blob(hx - side * rx * 0.12, hy - ry * 1.08, rx * 0.66, ry * 0.42)),
+    // swept up and back, without towering
+    front: union(cap(16, 0.44, 0.5), blob(hx - side * rx * 0.12, hy - ry * 0.98, rx * 0.68, ry * 0.3)),
   }),
   curly: ({ hx, hy, rx, ry, cap }) => {
     const bumps = [];
@@ -782,8 +786,9 @@ const HAIR = {
     back: circle(hx, hy - ry * 0.3, Math.max(rx, ry) * 1.18),
     front: cap(14, 0.4, 0.3),
   }),
+  // a flat-topped fade, a little above the crown (taller read as a tower)
   hightop: ({ hx, hy, rx, ry, cap }) => ({
-    back: blob(hx, hy - ry * 0.95, rx * 0.98, ry * 0.6, 4),
+    back: blob(hx, hy - ry * 0.84, rx * 0.92, ry * 0.4, 4),
     front: cap(12, 0.36, 0.4),
   }),
   bun: ({ hx, hy, rx, ry, cap, side }) => ({
