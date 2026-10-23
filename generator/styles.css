@@ -95,8 +95,8 @@ html, body { overflow: hidden; overscroll-behavior: none; }
 .group { margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--hairline); }
 .group h2 { font-size: 13px; color: var(--text-secondary); margin-bottom: 12px; }
 .group-head { display: flex; justify-content: space-between; align-items: baseline; }
-.generate { width: 100%; }
-.export { margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--hairline); }
+.generate { width: 100%; margin-top: 24px; }
+.export { margin-top: 0; }
 .export .export-row { margin-top: 0; }
 .export-note { margin-top: 8px; }
 .export-row { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px; margin-top: 8px; }

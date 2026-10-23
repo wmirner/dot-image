@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=57">
+<link rel="stylesheet" href="styles.css?v=59">
 </head>
 <body>
 <div class="app">
@@ -27,12 +27,12 @@
         <p class="hint restore-hint" id="codeHint">Each avatar's code is shown under it. Paste one here to bring back that exact avatar.</p>
         <input aria-describedby="codeHint" type="text" id="seedInput" class="field" placeholder="Paste a code, e.g. #2HTT65WLK" spellcheck="false" autocomplete="off">
       </div>
+
+      <button id="generateBtn" class="btn primary generate">Shuffle</button>
     </div>
 
-    <!-- pinned: Generate and Export stay visible while the options scroll -->
+    <!-- pinned: downloads stay visible while the options scroll -->
     <div class="sidebar-foot">
-      <button id="generateBtn" class="btn primary generate">Shuffle</button>
-
       <section class="export" aria-label="Download">
         <div class="export-row">
           <button id="exportGrid" class="btn small" title="Zip of the avatars on screen: SVGs, PNGs and codes">Download grid</button>
