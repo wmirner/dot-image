@@ -3,18 +3,18 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Twin Avatars</title>
+<title>Listen Twins Avatar Tool</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=55">
+<link rel="stylesheet" href="styles.css?v=56">
 </head>
 <body>
 <div class="app">
 
   <aside class="sidebar">
     <div class="sidebar-body">
-      <h1>Listen Twins Avatar</h1>
+      <h1>Listen Twins Avatar Tool</h1>
 
       <section class="group">
         <p class="hint parts-hint">Choose traits to give every avatar in the grid. Anything left on All stays random.</p>
@@ -24,7 +24,8 @@
 
       <div class="restore">
         <label for="seedInput">Have a code?</label>
-        <input type="text" id="seedInput" class="field" placeholder="Paste a code, e.g. #2HTT65WLK" spellcheck="false" autocomplete="off">
+        <p class="hint restore-hint" id="codeHint">Each avatar's code is shown under it. Paste one here to bring back that exact avatar.</p>
+        <input aria-describedby="codeHint" type="text" id="seedInput" class="field" placeholder="Paste a code, e.g. #2HTT65WLK" spellcheck="false" autocomplete="off">
       </div>
     </div>
 

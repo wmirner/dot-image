@@ -160,6 +160,7 @@ html, body { overflow: hidden; overscroll-behavior: none; }
 .restore { margin-top: 20px; }
 .restore label { display: block; color: var(--text-secondary); }
 .restore .field { margin-top: 8px; }
+.restore-hint { margin-top: 2px; }
 /* the parts hint sits under the heading, above the pills */
 .parts-hint { margin: 0 0 20px; }
 
