@@ -1,18 +1,19 @@
-/* Twin Avatars — UI around avatar.js */
+/* Twin Avatars — UI around avatar.js: a grid of avatars, parts as filters */
 
 "use strict";
 
 const A = window.TwinAvatar;
-const GALLERY_SIZE = 40;
-const EXPORT_PX = 2000;
+const GRID_SIZE = 48;
 const SET_PX = 1000;
 const JSZIP_URL = "https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js";
 
 const state = {
-  seed: "",
+  size: 120,           // tile size in px; copies are made at this size too
   locks: {},           // part key -> option id
-  current: null,       // traits shown in the hero
-  gallery: [],         // traits per tile
+  grid: [],            // traits per tile
+  pinned: null,        // avatar restored from a code, shown on its own
+  selecting: false,    // selection mode: clicking a tile selects it
+  selected: new Set(), // indices of selected tiles, used by export
 };
 
 const $ = id => document.getElementById(id);
@@ -26,7 +27,6 @@ const $ = id => document.getElementById(id);
 function drawScaled(canvas, size, list) {
   const dpr = Math.min(window.devicePixelRatio || 1, 2);
   const px = Math.round(size * dpr);
-  canvas.style.width = canvas.style.height = size + "px";
   canvas.width = canvas.height = px;
   let side = px;
   while (side < 800) side *= 2;
@@ -46,24 +46,9 @@ function drawScaled(canvas, size, list) {
   ctx.drawImage(src, 0, 0, px, px);
 }
 
-function renderHero() {
-  const list = A.dots(state.current);
-  for (const c of document.querySelectorAll(".hero canvas[data-size]")) {
-    drawScaled(c, parseInt(c.dataset.size), list);
-    c.classList.add("ready");
-  }
-  const code = "#" + A.encode(state.current);
-  $("codeLabel").textContent = code;
-  $("codeLabel").setAttribute("aria-label", "Copy avatar code " + code);
-  syncPartLabels();
-  for (const [i, b] of [...$("gallery").children].entries()) {
-    b.classList.toggle("active", A.encode(state.gallery[i]) === A.encode(state.current));
-  }
-}
-
 const FLIP_MS = 380;
 const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)");
-let galleryRun = 0;
+let gridRun = 0;
 
 // Coin flip: turn edge-on, swap in the new face, turn back
 function flipTile(b, next) {
@@ -85,36 +70,45 @@ function flipTile(b, next) {
 
 // Tiles render in a random order with small random gaps, so they flip over
 // one by one as if each avatar finishes generating at its own pace
-function renderGallery() {
-  const g = $("gallery");
-  const run = ++galleryRun;
-  const flip = g.children.length === state.gallery.length;
+function renderGrid() {
+  const g = $("grid");
+  const run = ++gridRun;
+  const flip = g.children.length === state.grid.length;
   if (!flip) {
     g.replaceChildren();
-    state.gallery.forEach((_, i) => {
+    // each tile: the avatar (click to copy its SVG) and its code below
+    // (click to copy the code, to bring the avatar back later)
+    state.grid.forEach((_, i) => {
+      const tile = document.createElement("div");
+      tile.className = "tile";
       const b = document.createElement("button");
-      b.addEventListener("click", () => {
-        const t = state.gallery[i];
-        state.current = { ...t };
-        state.seed = "#" + A.encode(t);
-        $("seedInput").value = state.seed;
-        renderHero();
+      b.setAttribute("aria-label", "Copy avatar SVG");
+      b.addEventListener("click", e => {
+        if (state.selecting) toggleSelected(i);
+        else copy(A.svg(state.grid[i], { size: state.size }), `SVG copied at ${state.size}px`, b, e.detail === 0);
       });
-      g.appendChild(b);
+      followTip(b, () => !state.selecting ? "Copy SVG" : state.selected.has(i) ? "Deselect" : "Select");
+      const code = document.createElement("button");
+      code.className = "code";
+      code.addEventListener("click", e =>
+        copy("#" + A.encode(state.grid[i]), "Code copied", code, e.detail === 0));
+      followTip(code, "Copy code");
+      tile.append(b, code);
+      g.appendChild(tile);
     });
   }
-  const order = state.gallery.map((_, i) => i).sort(() => Math.random() - 0.5);
+  const order = state.grid.map((_, i) => i).sort(() => Math.random() - 0.5);
   let at = 0;
   for (const i of order) {
-    at += 8 + Math.random() * 30;
+    at += 8 + Math.random() * 24;
     setTimeout(() => {
-      if (run !== galleryRun) return;
-      const t = state.gallery[i], b = g.children[i];
+      if (run !== gridRun) return;
+      const t = state.grid[i], tile = g.children[i], b = tile.firstChild, code = tile.lastChild;
+      code.textContent = "#" + A.encode(t);
+      code.setAttribute("aria-label", "Copy code " + code.textContent);
       const c = document.createElement("canvas");
-      drawScaled(c, b.clientWidth || 80, A.dots(t, A.portrait(t, { res: 125 })));
-      c.style.width = c.style.height = "";   // let the grid size it
+      drawScaled(c, state.size, A.dots(t, A.portrait(t, { res: state.size > 120 ? 250 : 125 })));
       b.classList.add("ready");
-      b.title = "#" + A.encode(t);
       if (flip) flipTile(b, c);
       else b.replaceChildren(c);
     }, at);
@@ -127,21 +121,9 @@ function renderGallery() {
 
 const randomSeed = () => (Math.random() * 2 ** 32) >>> 0;
 
-function traitsForSeed(seed) {
-  return A.fromSeed(seed === "" ? randomSeed() : seed, { locks: state.locks });
-}
-
-function applyLocks(t) {
-  const out = { ...t, ...state.locks };
-  // same rule as fromSeed: facial hair locked on its own steers presentation
-  // away from Feminine
-  if (out.facial !== "none" && out.presentation === "fem" && !state.locks.presentation) out.presentation = "andro";
-  return out;
-}
-
-// Unique variations: no two tiles look the same
-function uniqueSet(n, seedFn) {
-  const seen = new Set();
+// Unique avatars for the current filters: no two alike
+function uniqueSet(n, seedFn, exclude = []) {
+  const seen = new Set([...(state.pinned ? [state.pinned] : []), ...exclude].map(A.encode));
   const out = [];
   let tries = 0;
   while (out.length < n && tries < n * 50) {
@@ -154,22 +136,49 @@ function uniqueSet(n, seedFn) {
   return out;
 }
 
-function shuffleGallery() {
+// A fresh grid for the current filters, or just the avatar a code names
+function generate() {
+  clearSelection();   // new avatars, so the old selection no longer applies
   const base = randomSeed();
-  state.gallery = uniqueSet(GALLERY_SIZE, i => (base + i * 2654435761) >>> 0);
-  renderGallery();
-  renderHero();
+  state.grid = state.pinned ? [state.pinned] : uniqueSet(GRID_SIZE, i => (base + i * 2654435761) >>> 0);
+  renderGrid();
 }
 
-function updateCurrent() {
-  state.current = state.seed.startsWith("#") && A.decode(state.seed)
-    ? applyLocks(A.decode(state.seed))
-    : traitsForSeed(state.seed);
-  renderHero();
+function clearCode() {
+  state.pinned = null;
+  state.gridBeforeCode = null;
+  $("seedInput").value = "";
+  $("seedInput").classList.remove("invalid");
+}
+
+// Switch tile size: every avatar stays in its cell and scales in place,
+// then redraws sharply at the new size once the transition ends
+const RESIZE_MS = 220;
+let resizeTimer = 0;
+
+function showSize(size) {
+  state.size = size;
+  for (const b of $("sizes").children) b.setAttribute("aria-checked", String(+b.dataset.size === size));
+  $("grid").style.setProperty("--tile", size + "px");
+}
+
+function setSize(size) {
+  showSize(size);
+  clearTimeout(resizeTimer);
+  resizeTimer = setTimeout(() => {
+    const run = ++gridRun;
+    [...$("grid").children].forEach((tile, i) => setTimeout(() => {
+      if (run !== gridRun) return;
+      const c = document.createElement("canvas");
+      const t = state.grid[i];
+      drawScaled(c, size, A.dots(t, A.portrait(t, { res: size > 120 ? 250 : 125 })));
+      tile.firstChild.replaceChildren(c);
+    }, i * 4));
+  }, RESIZE_MS);
 }
 
 // ---------------------------------------------------------------------------
-// Parts panel
+// Parts panel: filters for the whole grid
 // ---------------------------------------------------------------------------
 
 const selects = {};
@@ -182,15 +191,14 @@ function buildParts() {
     const name = document.createElement("span");
     name.textContent = p.label;
     const sel = document.createElement("select");
-    sel.appendChild(new Option("Random", ""));
+    sel.appendChild(new Option("All", ""));
     for (const o of p.options) sel.appendChild(new Option(o.label, o.id));
     sel.addEventListener("change", () => {
       if (sel.value) state.locks[p.key] = sel.value;
       else delete state.locks[p.key];
       sel.classList.toggle("locked", !!sel.value);
-      state.current = applyLocks(state.current);
-      if (!sel.value) updateCurrent();
-      shuffleGallery();
+      clearCode();
+      generate();
     });
     selects[p.key] = sel;
     row.append(name, sel);
@@ -198,13 +206,82 @@ function buildParts() {
   }
 }
 
-// "Random" shows what the seed picked for the current avatar
-function syncPartLabels() {
-  for (const p of A.PARTS.filter(p => !p.hidden)) {
-    const sel = selects[p.key];
-    const o = p.options.find(o => o.id === state.current[p.key]);
-    sel.options[0].textContent = "Random · " + (o ? o.label : "–");
+// ---------------------------------------------------------------------------
+// Copying
+// ---------------------------------------------------------------------------
+
+// Bubble that follows the cursor over the tiles; it also confirms copies
+const tip = () => $("cursorTip");
+let tipTimer = 0;
+
+// `label` is a string or a function, so it can follow the current mode
+function followTip(el, label) {
+  const text = () => (typeof label === "function" ? label() : label);
+  el.addEventListener("pointerenter", () => {
+    clearTimeout(tipTimer);
+    tip().textContent = tip().dataset.label = text();
+  });
+  el.addEventListener("click", () => {
+    if (state.selecting) tip().textContent = tip().dataset.label = text();
+  });
+  el.addEventListener("pointermove", e => {
+    tip().style.transform = `translate(${e.clientX + 14}px, ${e.clientY + 18}px)`;
+    tip().classList.add("show");
+  });
+  el.addEventListener("pointerleave", () => tip().classList.remove("show"));
+}
+
+// Copy and confirm in the bubble. SVG as text pastes straight into Figma
+// and code as vectors.
+async function copy(text, done, el, fromKeyboard) {
+  let msg = done;
+  try { await navigator.clipboard.writeText(text); }
+  catch { msg = "Couldn't copy"; }
+  const t = tip();
+  if (fromKeyboard) {
+    // no cursor: show the bubble under the element instead
+    const r = el.getBoundingClientRect();
+    t.style.transform = `translate(${r.left + r.width / 2 - 34}px, ${r.bottom + 6}px)`;
   }
+  t.textContent = msg;
+  t.classList.add("show");
+  clearTimeout(tipTimer);
+  tipTimer = setTimeout(() => {
+    t.textContent = t.dataset.label || "Copy SVG";
+    if (fromKeyboard) t.classList.remove("show");
+  }, 1400);
+}
+
+// ---------------------------------------------------------------------------
+// Selection
+// ---------------------------------------------------------------------------
+
+function toggleSelected(i) {
+  if (state.selected.has(i)) state.selected.delete(i);
+  else state.selected.add(i);
+  syncSelection();
+}
+
+function setSelecting(on) {
+  state.selecting = on;
+  $("selectToggle").setAttribute("aria-pressed", String(on));
+  $("selectToggle").textContent = on ? "Done" : "Select";
+  $("selectTools").hidden = !on;
+  // while selecting, export is about the selection, so hide the new-set pill
+  document.querySelector(".set-pill").hidden = on;
+}
+
+function clearSelection() {
+  state.selected.clear();
+  syncSelection();
+}
+
+// tile marks, the count, and the export button all follow the selection
+function syncSelection() {
+  const n = state.selected.size;
+  [...$("grid").children].forEach((tile, i) => tile.classList.toggle("selected", state.selected.has(i)));
+  $("selCount").textContent = `${n} selected`;
+  $("exportGrid").textContent = n ? `Download ${n} selected` : "Download grid";
 }
 
 // ---------------------------------------------------------------------------
@@ -231,7 +308,17 @@ function pngBlob(t, px) {
 
 const fileName = t => "twin-avatar-" + A.encode(t);
 
-function setStatus(msg) { $("exportStatus").textContent = msg; }
+// the status line shows only while there's something to say
+let statusTimer = 0;
+function setStatus(msg, clearAfter = 0) {
+  clearTimeout(statusTimer);
+  $("exportStatus").textContent = msg;
+  $("exportStatus").parentElement.hidden = !msg;
+  if (clearAfter) statusTimer = setTimeout(() => setStatus(""), clearAfter);
+}
+
+// set by the X while a download renders; checked between avatars
+let exportCanceled = false;
 
 function loadScript(src) {
   return new Promise((resolve, reject) => {
@@ -243,70 +330,43 @@ function loadScript(src) {
   });
 }
 
-async function exportSet() {
-  const n = Math.max(1, Math.min(2000, parseInt($("setCount").value) || 100));
-  const btn = $("exportSet");
+// Zip of SVGs and PNGs plus a CSV of codes and traits
+async function exportZip(set, btn, name) {
   btn.disabled = true;
+  exportCanceled = false;
+  $("cancelExport").hidden = false;
   try {
     if (!window.JSZip) { setStatus("Loading zip library…"); await loadScript(JSZIP_URL); }
-    const base = randomSeed();
-    const set = uniqueSet(n, i => (base + i * 2654435761) >>> 0);
     const zip = new JSZip();
     const rows = ["code," + A.PARTS.map(p => p.key).join(",")];
     for (let i = 0; i < set.length; i++) {
-      const t = set[i], name = fileName(t);
-      zip.file("svg/" + name + ".svg", A.svg(t));
-      zip.file("png/" + name + ".png", await pngBlob(t, SET_PX));
+      if (exportCanceled) { setStatus("Download canceled.", 3000); return; }
+      const t = set[i], file = fileName(t);
+      zip.file("svg/" + file + ".svg", A.svg(t));
+      zip.file("png/" + file + ".png", await pngBlob(t, SET_PX));
       rows.push(A.encode(t) + "," + A.PARTS.map(p => t[p.key]).join(","));
       if (i % 10 === 0) setStatus(`Rendering ${i + 1} of ${set.length}…`);
     }
     zip.file("avatars.csv", rows.join("\n") + "\n");
     setStatus("Zipping…");
-    download(await zip.generateAsync({ type: "blob" }), `twin-avatars-${set.length}.zip`);
-    setStatus(set.length < n
-      ? `Downloaded ${set.length}: that's every unique avatar with these locks.`
-      : `Downloaded ${set.length} unique avatars.`);
+    const blob = await zip.generateAsync({ type: "blob" });
+    if (exportCanceled) { setStatus("Download canceled.", 3000); return; }
+    download(blob, name(set.length));
+    setStatus(`Downloaded ${set.length} avatars.`, 4000);
   } catch (e) {
-    setStatus(e.message);
+    setStatus(e.message, 6000);
   } finally {
     btn.disabled = false;
+    $("cancelExport").hidden = true;
   }
 }
 
-// Brief note under the code after copying
-let copiedTimer = 0;
-function showNote(msg) {
-  const note = $("copiedNote");
-  note.textContent = msg;
-  note.classList.add("show");
-  clearTimeout(copiedTimer);
-  copiedTimer = setTimeout(() => note.classList.remove("show"), 1600);
+function exportSet() {
+  const n = Math.max(1, Math.min(2000, parseInt($("setCount").value) || 100));
+  const base = randomSeed();
+  const set = uniqueSet(n, i => (base + i * 2654435761) >>> 0);
+  exportZip(set, $("exportSet"), k => `twin-avatars-${k}.zip`);
 }
-
-// When the cursor bubble is up, it confirms the copy in place; otherwise
-// (sidebar button, keyboard) the note under the code does
-let tipTimer = 0;
-async function copyText(text, done) {
-  let msg = done;
-  try { await navigator.clipboard.writeText(text); }
-  catch { msg = "Couldn't copy"; }
-  const tip = $("cursorTip");
-  if (tip.classList.contains("show")) {
-    tip.textContent = msg;
-    clearTimeout(tipTimer);
-    tipTimer = setTimeout(() => { tip.textContent = tip.dataset.label; }, 1400);
-  } else {
-    showNote(msg);
-  }
-}
-
-const copyCode = () => copyText("#" + A.encode(state.current), "Avatar code copied");
-// SVG as text pastes straight into Figma and code as vectors, at the size
-// of the preview that was clicked (160, 80 or 40)
-const copySvg = e => {
-  const size = parseInt(e.target.closest("canvas")?.dataset.size) || 160;
-  copyText(A.svg(state.current, { size }), `SVG copied at ${size}px`);
-};
 
 // ---------------------------------------------------------------------------
 // Wiring
@@ -314,52 +374,58 @@ const copySvg = e => {
 
 function init() {
   buildParts();
-  $("dotReadout").textContent = A.comboCount().toLocaleString() + " combinations";
 
+  for (const b of $("sizes").children) b.addEventListener("click", () => setSize(+b.dataset.size));
+
+  $("generateBtn").addEventListener("click", () => {
+    clearCode();
+    generate();
+  });
+
+  // paste an avatar code (with or without #): that exact avatar leads the grid
   $("seedInput").addEventListener("input", e => {
-    state.seed = e.target.value.trim();
-    updateCurrent();
+    const v = e.target.value.trim();
+    const t = v ? A.decode(v) : null;
+    e.target.classList.toggle("invalid", !!v && !t);
+    if (t) {
+      if (!state.pinned) state.gridBeforeCode = state.grid;
+      state.pinned = t;
+      generate();
+    } else if (state.pinned) {
+      // code removed or no longer valid: back to the grid from before
+      state.pinned = null;
+      state.grid = state.gridBeforeCode || [];
+      state.gridBeforeCode = null;
+      if (state.grid.length) renderGrid(); else generate();
+    }
   });
-  $("randomBtn").addEventListener("click", () => {
-    state.seed = "";
-    $("seedInput").value = "";
-    updateCurrent();
-  });
-  $("copyCode").addEventListener("click", copyCode);
-  $("codeLabel").addEventListener("click", copyCode);
-  $("copySvg").addEventListener("click", copySvg);
-  // a bubble rides along with the cursor over the top avatars and the code
-  const tip = $("cursorTip");
-  const follow = (el, label) => {
-    el.addEventListener("pointerenter", () => {
-      clearTimeout(tipTimer);
-      tip.textContent = tip.dataset.label = label;
-    });
-    el.addEventListener("pointermove", e => {
-      tip.style.transform = `translate(${e.clientX + 14}px, ${e.clientY + 18}px)`;
-      tip.classList.add("show");
-    });
-    el.addEventListener("pointerleave", () => tip.classList.remove("show"));
-  };
-  for (const c of document.querySelectorAll(".hero .avatar")) follow(c, "Copy SVG");
-  follow($("codeLabel"), "Copy code");
+
   $("unlockAll").addEventListener("click", () => {
+    if (!Object.keys(state.locks).length) return;   // nothing set: leave the grid alone
     state.locks = {};
     for (const sel of Object.values(selects)) { sel.value = ""; sel.classList.remove("locked"); }
-    updateCurrent();
-    shuffleGallery();
+    clearCode();
+    generate();
   });
-  $("shuffleBtn").addEventListener("click", shuffleGallery);
-  $("exportPng").addEventListener("click", async () => {
-    download(await pngBlob(state.current, EXPORT_PX), fileName(state.current) + ".png");
-  });
-  $("exportSvg").addEventListener("click", () => {
-    download(new Blob([A.svg(state.current)], { type: "image/svg+xml" }), fileName(state.current) + ".svg");
-  });
-  $("exportSet").addEventListener("click", exportSet);
 
-  updateCurrent();
-  shuffleGallery();
+  // selected avatars when there are any, otherwise the whole grid
+  $("exportGrid").addEventListener("click", () => {
+    const picked = state.grid.filter((_, i) => state.selected.has(i));
+    exportZip(picked.length ? picked : state.grid, $("exportGrid"),
+      k => picked.length ? `twin-avatars-selected-${k}.zip` : `twin-avatars-grid-${k}.zip`);
+  });
+
+  $("selectToggle").addEventListener("click", () => setSelecting(!state.selecting));
+  $("selectAll").addEventListener("click", () => {
+    state.grid.forEach((_, i) => state.selected.add(i));
+    syncSelection();
+  });
+  $("deselectAll").addEventListener("click", clearSelection);
+  $("exportSet").addEventListener("click", exportSet);
+  $("cancelExport").addEventListener("click", () => { exportCanceled = true; });
+
+  showSize(state.size);
+  generate();
 }
 
 init();

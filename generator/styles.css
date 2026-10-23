@@ -88,11 +88,80 @@ html, body { overflow: hidden; overscroll-behavior: none; }
   border-top: 1px solid var(--hairline);
 }
 .sidebar-foot h2 { font-size: 13px; color: var(--text-secondary); margin-bottom: 4px; }
+/* the first section follows the title directly, without a divider */
+.sidebar h1 + .group { border-top: none; padding-top: 0; margin-top: 20px; }
 .sidebar h1 { font-size: 18px; line-height: 1.35; }
 
 .group { margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--hairline); }
 .group h2 { font-size: 13px; color: var(--text-secondary); margin-bottom: 12px; }
 .group-head { display: flex; justify-content: space-between; align-items: baseline; }
+.generate { width: 100%; }
+.export { margin-top: 20px; }
+.export-row { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px; margin-top: 8px; }
+.set-pill {
+  display: inline-flex;
+  align-items: center;
+  height: 30px;
+  padding-right: 4px;
+  border-radius: 999px;
+  background: var(--fill);
+  transition: background-color 120ms;
+}
+.set-pill:hover { background: var(--fill-hover); }
+.set-pill[hidden] { display: none; }
+.set-btn {
+  height: 100%;
+  padding: 0 6px 0 12px;
+  border: none;
+  background: none;
+  font-size: 12px;
+  cursor: pointer;
+  border-radius: 999px 0 0 999px;
+}
+.set-btn:disabled { color: var(--text-secondary); cursor: default; }
+.set-btn:focus-visible { outline: none; box-shadow: 0 0 0 2px var(--brand); }
+.set-pill input {
+  width: 44px;
+  height: 22px;
+  border: none;
+  border-radius: 999px;
+  background: var(--panel);
+  color: var(--text);
+  text-align: center;
+  font: inherit;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  -moz-appearance: textfield;
+}
+.set-pill input::-webkit-outer-spin-button,
+.set-pill input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.set-pill input:focus { outline: none; box-shadow: 0 0 0 2px var(--brand); }
+.btn.small { height: 30px; padding: 0 12px; font-size: 12px; }
+/* only shown while a download is running or just finished */
+.status { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
+.status[hidden] { display: none; }
+/* small round X to stop a download that's rendering */
+.cancel {
+  width: 20px;
+  height: 20px;
+  flex: none;
+  border: none;
+  border-radius: 50%;
+  background: var(--fill);
+  color: var(--text-secondary);
+  font-size: 14px;
+  line-height: 20px;
+  padding: 0;
+  cursor: pointer;
+}
+.cancel:hover { background: var(--fill-hover); color: var(--text); }
+.cancel[hidden] { display: none; }
+
+.restore { margin-top: 20px; }
+.restore label { display: block; color: var(--text-secondary); }
+.restore .field { margin-top: 8px; }
+/* the parts hint sits under the heading, above the pills */
+.parts-hint { margin: 0 0 20px; }
 
 .row { display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
 .hint { color: var(--text-secondary); font-size: 12px; margin-top: 12px; }
@@ -107,6 +176,7 @@ html, body { overflow: hidden; overscroll-behavior: none; }
   outline: none;
 }
 .field::placeholder { color: var(--text-secondary); }
+.field.invalid { box-shadow: 0 0 0 1px #CF2617; }   /* not a valid avatar code */
 .field:focus-visible, .part select:focus-visible, .btn:focus-visible, .link:focus-visible {
   box-shadow: 0 0 0 2px var(--brand);
 }
@@ -116,7 +186,7 @@ html, body { overflow: hidden; overscroll-behavior: none; }
   display: grid;
   grid-template-columns: 80px 1fr;
   align-items: center;
-  gap: 8px;
+  gap: 12px;
   margin-bottom: 6px;
 }
 .part span { color: var(--text-secondary); }
@@ -148,6 +218,10 @@ html, body { overflow: hidden; overscroll-behavior: none; }
 .btn:disabled { color: var(--text-secondary); cursor: default; }
 .btn.primary { background: var(--brand); color: var(--on-brand); }
 .btn.primary:hover { background: var(--brand-hover); }
+/* stroked pill */
+.btn.outline { background: none; box-shadow: inset 0 0 0 1px var(--hairline); color: var(--text-secondary); }
+.btn.outline:hover { background: none; box-shadow: inset 0 0 0 1px var(--text-secondary); color: var(--text); }
+.reset { width: 100%; height: 32px; margin-top: 6px; }
 
 .link {
   border: none;
@@ -159,7 +233,7 @@ html, body { overflow: hidden; overscroll-behavior: none; }
 }
 .link:hover { color: var(--text); }
 
-/* ---------- Stage ---------- */
+/* ---------- Stage: one big grid ---------- */
 
 .stage {
   position: relative;
@@ -170,69 +244,109 @@ html, body { overflow: hidden; overscroll-behavior: none; }
   background: var(--stage);
 }
 
-/* combinations count, top right */
-.combos {
-  position: absolute;
-  top: 20px;
-  right: 56px;
-  font-size: 12px;
+/* size switcher on the left, combinations count on the right */
+.stage-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: -24px 0 28px;
+}
+.sizes {
+  display: flex;
+  gap: 2px;
+  padding: 3px;
+  border-radius: 999px;
+  background: var(--fill);
+}
+.sizes button {
+  height: 28px;
+  min-width: 44px;
+  padding: 0 12px;
+  border: none;
+  border-radius: 999px;
+  background: none;
   color: var(--text-secondary);
   font-variant-numeric: tabular-nums;
-}
-
-.hero {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 24px;
-}
-
-/* the previews are one button: clicking an avatar copies its SVG */
-.previews {
-  display: flex;
-  align-items: flex-end;
-  gap: 20px;
-  border: none;
-  background: none;
-  padding: 0;
   cursor: pointer;
-  border-radius: 16px;
+  transition: background-color 120ms, color 120ms;
 }
-.previews:focus-visible { outline: none; box-shadow: 0 0 0 2px var(--brand); }
-.avatar { display: block; border-radius: 50%; background: var(--placeholder); transition: transform 160ms ease-out; }
-.previews .avatar:hover { transform: scale(1.06); }
-/* avatars are transparent; the fill only holds the spot while rendering */
-.avatar.ready, .gallery button.ready { background: transparent; }
+.sizes button:hover { color: var(--text); }
+.sizes button[aria-checked="true"] { background: var(--panel); color: var(--text); box-shadow: 0 1px 2px rgba(18, 15, 8, 0.08); }
+.sizes button:focus-visible { outline: none; box-shadow: 0 0 0 2px var(--brand); }
+/* selection mode: count, select all / deselect all, and the toggle */
+.select-bar { display: flex; align-items: center; gap: 16px; }
+.select-tools { display: flex; align-items: center; gap: 16px; font-size: 12px; }
+.select-tools[hidden] { display: none; }
+.sel-count { color: var(--text); font-variant-numeric: tabular-nums; }
+.select-tools .link { font-size: 12px; }
+#selectToggle[aria-pressed="true"] { background: var(--text); color: var(--panel); box-shadow: none; }
 
-.code-wrap { position: relative; display: flex; flex-direction: column; align-items: flex-end; }
-.code {
-  font-size: 20px;
-  font-variant-numeric: tabular-nums;
-  border: none;
-  background: none;
-  padding: 4px 10px;
-  margin: -4px -10px;
-  border-radius: 999px;
-  cursor: pointer;
-  transition: background-color 120ms;
-}
-.code:hover { background: var(--placeholder); }
-.code:focus-visible { outline: none; box-shadow: 0 0 0 2px var(--brand); }
-.copied {
+/* selected tiles: a ring and a check */
+.grid .tile > button:first-child { position: relative; }
+.grid .tile.selected > button:first-child { box-shadow: 0 0 0 3px var(--stage), 0 0 0 5px var(--brand); }
+.grid .tile.selected > button:first-child::after {
+  content: "";
   position: absolute;
-  top: 100%;
-  right: 0;
-  margin-top: 8px;
-  white-space: nowrap;
-  font-size: 12px;
-  color: var(--brand);
-  opacity: 0;
-  transform: translateY(-4px);
-  transition: opacity 160ms, transform 160ms;
+  top: -2px;
+  right: -2px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--brand) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='8' viewBox='0 0 10 8'%3E%3Cpath d='M1 4l2.6 2.6L9 1' fill='none' stroke='white' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center no-repeat;
+  box-shadow: 0 0 0 2px var(--stage);
 }
-.copied.show { opacity: 1; transform: none; }
 
-/* bubble that follows the cursor over the avatars and the code */
+/* tiles render at exactly the chosen size (--tile) */
+/* cells are sized for the largest view, so switching sizes never reflows:
+   each avatar stays in its cell and scales in place */
+.grid {
+  --tile: 120px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(168px, 1fr));
+  gap: 12px 8px;
+}
+.tile {
+  height: 190px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+}
+/* the avatar's code, small, under each tile; click to copy */
+.tile .code {
+  border: none;
+  background: none;
+  padding: 1px 4px;
+  border-radius: 999px;
+  font-size: 9px;
+  line-height: 12px;
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.tile .code:hover { color: var(--text); background: var(--placeholder); }
+.tile .code:focus-visible { outline: none; box-shadow: 0 0 0 2px var(--brand); }
+.grid > .tile > button:first-child {
+  width: var(--tile);
+  height: var(--tile);
+  flex: none;
+  transition: width 220ms ease, height 220ms ease;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: var(--placeholder);
+  cursor: pointer;
+}
+/* avatars are transparent; the fill only holds the spot while rendering */
+.grid .tile > button.ready { background: transparent; }
+.grid .tile > button:first-child:focus-visible { box-shadow: 0 0 0 2px var(--brand); outline: none; }
+/* scale the canvas, not the button, so hover doesn't fight the flip */
+.grid canvas { display: block; width: 100%; height: 100%; border-radius: 50%; transition: transform 160ms ease-out; }
+.grid .tile > button:hover canvas { transform: scale(1.06); }
+
+/* bubble that follows the cursor over the tiles and confirms copies */
 .cursor-tip {
   position: fixed;
   left: 0;
@@ -250,40 +364,6 @@ html, body { overflow: hidden; overscroll-behavior: none; }
 }
 .cursor-tip.show { opacity: 1; }
 
-.divider { height: 1px; background: var(--hairline); margin: 48px 0 40px; }
-
-.gallery-head {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 24px;
-}
-.gallery-head h2 { font-size: 17px; }
-
-.gallery {
-  display: grid;
-  grid-template-columns: repeat(8, 1fr);
-  gap: 16px;
-}
-.gallery button {
-  aspect-ratio: 1;
-  width: 100%;
-  padding: 0;
-  border: none;
-  border-radius: 50%;
-  background: var(--placeholder);
-  cursor: pointer;
-}
-.gallery button:focus-visible { box-shadow: 0 0 0 2px var(--brand); outline: none; }
-.gallery button.active { box-shadow: 0 0 0 2px var(--stage), 0 0 0 4px var(--brand); }
-/* scale the canvas, not the button, so hover doesn't fight the flip */
-.gallery canvas { display: block; width: 100%; height: 100%; border-radius: 50%; transition: transform 160ms ease-out; }
-.gallery button:hover canvas { transform: scale(1.06); }
-
-@media (max-width: 1100px) {
-  .gallery { grid-template-columns: repeat(6, 1fr); }
-}
-
 @media (max-width: 760px) {
   html { background: var(--stage); }
   html, body { overflow: visible; }
@@ -291,11 +371,6 @@ html, body { overflow: hidden; overscroll-behavior: none; }
   .sidebar { width: 100%; border-radius: 0 0 16px 16px; overflow: visible; }
   .sidebar-body { overflow: visible; padding: 24px 16px 16px; }
   .sidebar-foot { padding: 16px 16px 24px; }
-  .stage { overflow: visible; padding: 32px 16px; }
-  .hero { flex-wrap: wrap; }
-  .previews { gap: 12px; }
-  .code { font-size: 16px; }
-  .combos { right: 16px; top: 12px; }
-  .divider { margin: 32px 0 24px; }
-  .gallery { grid-template-columns: repeat(4, 1fr); gap: 12px; }
+  .stage { overflow: visible; padding: 40px 16px 32px; }
+  .stage-head { margin-top: -16px; }
 }

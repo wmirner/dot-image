@@ -7,77 +7,72 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=29">
+<link rel="stylesheet" href="styles.css?v=55">
 </head>
 <body>
 <div class="app">
 
   <aside class="sidebar">
     <div class="sidebar-body">
-      <h1>Listen Twins Avatar<br>Generator</h1>
+      <h1>Listen Twins Avatar</h1>
 
       <section class="group">
-        <h2>Seed</h2>
-        <input type="text" id="seedInput" class="field" placeholder="Twin name, ID or #code" spellcheck="false" autocomplete="off">
-        <div class="row">
-          <button id="randomBtn" class="btn primary">Generate</button>
-          <button id="copyCode" class="btn">Copy code</button>
-        </div>
-        <p class="hint">The same name or ID always gives the same avatar.</p>
-      </section>
-
-      <section class="group">
-        <div class="group-head">
-          <h2>Parts</h2>
-          <button id="unlockAll" class="link">Reset all</button>
-        </div>
+        <p class="hint parts-hint">Choose traits to give every avatar in the grid. Anything left on All stays random.</p>
         <div id="parts"></div>
-        <p class="hint">Pick a part to lock it. Face shape, pose and lighting vary on their own.</p>
+        <button id="unlockAll" class="btn outline reset">Reset all</button>
       </section>
+
+      <div class="restore">
+        <label for="seedInput">Have a code?</label>
+        <input type="text" id="seedInput" class="field" placeholder="Paste a code, e.g. #2HTT65WLK" spellcheck="false" autocomplete="off">
+      </div>
     </div>
 
-    <section class="sidebar-foot">
-      <h2>Export</h2>
-      <div class="row">
-        <button id="exportPng" class="btn">PNG</button>
-        <button id="exportSvg" class="btn">SVG</button>
-      </div>
-      <div class="row">
-        <input type="number" id="setCount" class="field count" value="100" min="1" max="2000" aria-label="Set size">
-        <button id="exportSet" class="btn">Download unique set</button>
-      </div>
-      <p class="hint" id="exportStatus">A .zip of SVGs and PNGs with a code list, no two alike.</p>
-    </section>
+    <!-- pinned: Generate and Export stay visible while the options scroll -->
+    <div class="sidebar-foot">
+      <button id="generateBtn" class="btn primary generate">Shuffle</button>
+
+      <section class="export">
+        <h2>Export</h2>
+        <div class="export-row">
+          <button id="exportGrid" class="btn small" title="Zip of the avatars on screen: SVGs, PNGs and codes">Download grid</button>
+          <!-- one pill: the label downloads, the number inside is editable -->
+          <span class="set-pill" title="Zip of that many new, unique avatars">
+            <button id="exportSet" class="set-btn">Download set of</button>
+            <input type="number" id="setCount" value="100" min="1" max="2000" aria-label="Number of avatars in the set">
+          </span>
+        </div>
+        <p class="hint status" hidden>
+          <span id="exportStatus" aria-live="polite"></span>
+          <button id="cancelExport" class="cancel" aria-label="Cancel download" hidden>×</button>
+        </p>
+      </section>
+    </div>
   </aside>
 
   <main class="stage">
-    <span class="combos" id="dotReadout">–</span>
-    <section class="hero">
-      <button class="previews" id="copySvg" aria-label="Copy avatar SVG">
-        <canvas class="avatar" data-size="160"></canvas>
-        <canvas class="avatar" data-size="80"></canvas>
-        <canvas class="avatar" data-size="40"></canvas>
-      </button>
-      <div class="code-wrap">
-        <button class="code" id="codeLabel" aria-label="Copy avatar code">–</button>
-        <span class="copied" id="copiedNote" role="status" aria-live="polite"></span>
+    <div class="stage-head">
+      <div class="sizes" id="sizes" role="radiogroup" aria-label="Avatar size">
+        <button role="radio" data-size="40">40</button>
+        <button role="radio" data-size="80">80</button>
+        <button role="radio" data-size="120">120</button>
+        <button role="radio" data-size="160">160</button>
       </div>
-    </section>
-
-    <div class="divider"></div>
-
-    <section>
-      <div class="gallery-head">
-        <h2>Variations</h2>
-        <button id="shuffleBtn" class="btn primary">Shuffle</button>
+      <div class="select-bar">
+        <span class="select-tools" id="selectTools" hidden>
+          <span class="sel-count" id="selCount" aria-live="polite">0 selected</span>
+          <button id="selectAll" class="link">Select all</button>
+          <button id="deselectAll" class="link">Deselect all</button>
+        </span>
+        <button id="selectToggle" class="btn small outline" aria-pressed="false">Select</button>
       </div>
-      <div class="gallery" id="gallery"></div>
-    </section>
+    </div>
+    <div class="grid" id="grid"></div>
   </main>
 
 </div>
 <div class="cursor-tip" id="cursorTip" aria-hidden="true">Copy SVG</div>
-<script src="avatar.js?v=35"></script>
-<script src="app.js?v=21"></script>
+<script src="avatar.js?v=55"></script>
+<script src="app.js?v=38"></script>
 </body>
 </html>

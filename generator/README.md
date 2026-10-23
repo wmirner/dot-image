@@ -1,23 +1,25 @@
 # Twin Avatars
 
 Generic avatars for Twins that look like the dotted photo avatars, without a
-photo. A Twin's name or ID picks a set of traits. The traits paint a
+photo. Each avatar is a random set of traits with a short code (like
+`#2HTT65WL`) that brings back that exact avatar. The traits paint a
 synthetic grayscale portrait: a lit head with soft features, hair texture
 and clothes. The portrait then goes through
 the photo tool's dot pipeline (a slightly finer 46-unit hex grid, area sampling, brand
 blue `#0021CC` duotone, darker = bigger) on a transparent background. Every avatar sits on a
 plain wall: light by default, and mid or dark behind white and light tops,
-whichever keeps the face and hair readable. The same seed always gives
-the same avatar.
+whichever keeps the face and hair readable.
 
-**Live (once deployed):** https://wmirner.github.io/dot-image/generator/
+**Live:** https://wmirner.github.io/dot-image/generator/
 
 ## Parts
 
-You can pick (or lock) the parts you'd use to describe someone: presentation
+The page is a grid of avatars. Shuffle fills it with random ones; setting a
+part (the rest stay on All) filters the whole grid. Click any avatar to copy its SVG. The parts are the ones you'd use
+to describe someone: presentation
 (feminine, masculine or androgynous), age (20s, 30s–40s, 50s, 65+), hair length,
-hair texture, hair color, skin tone, expression, facial hair, accessory
-(glasses, sunglasses, beanie, cap, headphones, earrings) and top.
+hair texture, hair shade, skin tone, facial hair, accessory
+(glasses, sunglasses, headphones, beanie, cap) and top.
 
 Hidden parts make each one read as a different photo: hair cut, face shape,
 eyes, brows, nose, top shade, pose and lighting. These are
@@ -25,13 +27,13 @@ only picked from the seed. Head size is fixed and placement is near-identical
 across avatars (face shapes vary in proportion, not size). A few units of
 seeded jitter in position, tilt and exposure keep them from feeling stamped.
 
-Eyes, brows, nose and mouth are always diffused: the portrait is rendered with
+Eyes, brows and nose are always diffused: the portrait is rendered with
 and without them, and only the difference is blurred before it's added back.
 So features read as soft shading across several dots, never as single dots.
 
 Presentation is split evenly three ways. It changes the odds for hair
 length, facial hair and accessories (`odds` in `PARTS`) instead of forcing
-them: feminine leans medium and long hair with earrings more often, masculine
+them: feminine leans medium and long hair, masculine
 leans short hair with facial hair about half the time, and androgynous sits
 in between. Facial hair never comes up for feminine. Locked parts always win, but locking
 facial hair on its own steers presentation to masculine or androgynous; a
@@ -41,8 +43,9 @@ Age is split evenly four ways. Older avatars are more likely to have grey or
 white hair, glasses and a shorter or receding hairline, and get softly shaded
 lines (nose-to-mouth folds, under-eye shadows, forehead lines). Skin tone is
 split evenly five ways, and hair texture covers straight, wavy, curly and coily
-(each at least about a fifth). Expressions are neutral or smiling only: neutral,
-slight smile, smile, big smile, laughing and half smile.
+(each at least about a fifth). Expressions are neutral or smiling only (neutral, smile,
+big smile); they barely show at dot size, so they vary on their own rather
+than being a menu choice.
 
 ## Keeping it respectful
 

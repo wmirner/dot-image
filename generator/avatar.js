@@ -55,38 +55,39 @@ const PARTS = [
     ageMul: { young: [0.4, 1, 1, 1.15], middle: [1.6, 1, 1, 0.8], senior: [2.6, 1.2, 1, 0.5] } },
   { key: "texture", label: "Hair texture", options: [
     opt("straight", "Straight", 2), opt("wavy", "Wavy", 1.2), opt("curly", "Curly"), opt("coily", "Coily") ] },
-  { key: "hairTone", label: "Hair color", options: [
-    opt("black", "Black"), opt("dark", "Dark brown"), opt("brown", "Brown"),
-    opt("blonde", "Blonde"), opt("grey", "Grey"), opt("white", "White") ],
+  // everything renders in blue, so hair color is just how light it is;
+  // older avatars lean light (grey and white)
+  { key: "hairTone", label: "Hair shade", options: [
+    opt("dark", "Dark"), opt("mid", "Medium"), opt("light", "Light") ],
     ageOdds: {
-      young:  [2, 2, 1, 1, 0.03, 0],
-      adult:  [2, 2, 1, 1, 0.25, 0],
-      middle: [1.4, 1.4, 0.8, 0.6, 2.2, 0.3],
-      senior: [0.3, 0.4, 0.3, 0.2, 3, 2.5],
+      young:  [4, 1, 1],
+      adult:  [4, 1, 1.1],
+      middle: [2.6, 1, 2.6],
+      senior: [0.7, 0.6, 5.5],
     } },
   { key: "skin", label: "Skin tone", options: [
     opt("1", "Very light"), opt("2", "Light"), opt("3", "Medium"),
     opt("4", "Tan"), opt("5", "Deep") ] },
-  { key: "mouth", label: "Expression", options: [
-    opt("neutral", "Neutral"), opt("soft", "Slight smile", 1.6), opt("smile", "Smile", 1.6),
-    opt("grin", "Big smile"), opt("laugh", "Laughing", 0.8), opt("half", "Half smile", 0.9) ] },
+  // expression barely shows at dot size, so it varies on its own (hidden)
+  { key: "mouth", label: "Expression", hidden: true, options: [
+    opt("neutral", "Neutral"), opt("smile", "Smile", 1.4), opt("grin", "Big smile") ] },
   { key: "facial", label: "Facial hair", options: [
     opt("none", "None"), opt("stubble", "Stubble"), opt("mustache", "Mustache"),
     opt("goatee", "Goatee"), opt("beard", "Beard") ],
     odds: { fem: [1, 0, 0, 0, 0], masc: [4, 1.5, 0.5, 0.6, 1.5], andro: [10, 1, 0, 0, 0] } },
+  // only accessories that read at dot size (earrings and thin frames didn't)
   { key: "extra", label: "Accessory", options: [
-    opt("none", "None"), opt("glasses", "Glasses"), opt("bold", "Bold glasses"),
-    opt("shades", "Sunglasses"), opt("earrings", "Earrings"),
+    opt("none", "None"), opt("glasses", "Glasses"), opt("shades", "Sunglasses"),
     opt("headphones", "Headphones"), opt("beanie", "Beanie"), opt("cap", "Cap") ],
     odds: {
-      fem:   [4, 1, 1, 0.4, 2, 0.5, 0.6, 0.3],
-      masc:  [5, 1, 1, 0.4, 0.2, 0.5, 0.6, 0.6],
-      andro: [4, 1, 1.2, 0.4, 1, 0.7, 0.7, 0.4],
+      fem:   [4, 2, 0.5, 0.6, 0.7, 0.4],
+      masc:  [5, 2, 0.5, 0.6, 0.7, 0.7],
+      andro: [4, 2.2, 0.5, 0.8, 0.8, 0.5],
     },
     ageMul: {
-      young:  [1, 0.7, 1, 1.2, 1.1, 1.5, 1.3, 1.3],
-      middle: [1, 1.8, 1.4, 0.8, 1, 0.6, 0.7, 0.8],
-      senior: [1, 3, 1.5, 0.6, 1, 0.3, 0.6, 0.7],
+      young:  [1, 0.85, 1.2, 1.5, 1.3, 1.3],
+      middle: [1, 1.7, 0.8, 0.6, 0.7, 0.8],
+      senior: [1, 2.6, 0.6, 0.3, 0.6, 0.7],
     } },
   { key: "top", label: "Top", options: [
     opt("crew", "T-shirt", 2), opt("vneck", "V neck"), opt("collar", "Collared shirt"),
@@ -114,7 +115,7 @@ const STYLES = {
   medium: {
     // bun is last in one list only, so it's an occasional look (~1%)
     straight: ["bob", "curtains", "bangsBob", "sideSwept", "bun"],
-    wavy:     ["wavyBob", "shag", "curtains", "sideSwept", "bangsBob"],
+    wavy:     ["wavyBob", "shag", "curtains", "sideSwept"],
     curly:    ["curlyBob", "shag", "sideSwept", "curtains"],
     coily:    ["afro", "puffs", "curly", "curlyBob"],
   },
@@ -193,7 +194,13 @@ function fromSeed(seed, { locks = {} } = {}) {
 // Codes use digits and consonants only, with no vowels and no 0/1/3/4
 // (which stand in for O/I/E/A), so a code can never spell a word or slur
 const CODE_ALPHABET = "256789BCDFGHJKLMNPQRSTVWXZ";
-const CODE_LEN = 8;
+// as many characters as it takes to hold every combination, so adding
+// parts can never silently truncate codes
+const CODE_LEN = (() => {
+  let len = 1;
+  while (CODE_ALPHABET.length ** len < comboCount()) len++;
+  return len;
+})();
 
 function encode(t) {
   let n = 0;
@@ -328,7 +335,7 @@ const HEADS = {
 };
 // lifted so deeper skin keeps visible shading instead of a solid silhouette
 const SKIN = { 1: 0.94, 2: 0.86, 3: 0.76, 4: 0.65, 5: 0.53 };
-const HAIR_LUM = { black: 0.05, dark: 0.12, brown: 0.26, blonde: 0.56, grey: 0.62, white: 0.8 };
+const HAIR_LUM = { dark: 0.07, mid: 0.28, light: 0.66 };
 const TOP_LUM = { white: 0.95, light: 0.78, mid: 0.52, dark: 0.26, black: 0.1 };
 const YAW = { l2: -0.32, l1: -0.15, front: 0, r1: 0.15, r2: 0.32 };
 const LIGHTS = {
@@ -344,7 +351,15 @@ const HEAD_AREA = 25000;   // face shapes are normalized to this rx * ry
 // face and hair readable. Scored on rendered tones: a lit face averages
 // about 0.56 of its skin value.
 const WALL_LIGHT = 0.88;
-const WALLS_FOR_LIGHT_TOPS = [0.64, 0.2];
+
+const TOP_SHADES = [0.95, 0.78, 0.52, 0.26, 0.1];
+function contrastTop(base, face, hair) {
+  const ok = v => Math.abs(v - face) >= 0.22 && (hair === null || Math.abs(v - hair) >= 0.22);
+  if (ok(base)) return base;
+  const usable = TOP_SHADES.filter(ok).sort((a, b) => Math.abs(a - base) - Math.abs(b - base));
+  return usable.length ? usable[0] : base;
+}
+const WALLS_FOR_LIGHT_TOPS = [0.64, 0.4];   // the darkest wall read as a big blue disc
 function pickWall(skin, topLum, hairLum) {
   if (topLum < 0.75) return WALL_LIGHT;
   const face = skin * 0.56;
@@ -368,7 +383,8 @@ const AMB = { left: 0.42, right: 0.42, top: 0.45, soft: 0.62 };
 // 1 light, back = how much of the pixel is backdrop.
 
 function scene(t) {
-  const rnd = mulberry32(hashString(encode(t)));
+  // jitterSeed is for testing only: it holds the small random shifts still
+  const rnd = mulberry32(t.jitterSeed ?? hashString(encode(t)));
   const j = (amt) => (rnd() - 0.5) * 2 * amt;    // jitter in [-amt, amt]
 
   const L = LIGHTS[t.light] || LIGHTS.left;
@@ -390,8 +406,11 @@ function scene(t) {
   const skin = SKIN[t.skin] ?? 0.84;
   const hairLum = HAIR_LUM[t.hairTone] ?? 0.1;
   const browLum = Math.min(hairLum, 0.32) * (skin < 0.5 ? 0.6 : 1);
-  const topLum = TOP_LUM[t.topTone] ?? 0.26;
-  const seed = hashString(encode(t));
+  // the top keeps its picked shade unless it would blend into the face (or
+  // long hair falling over it); then it moves to the nearest shade that reads
+  const topLum = contrastTop(TOP_LUM[t.topTone] ?? 0.26, skin * 0.56,
+    t.length === "long" ? (HAIR_LUM[t.hairTone] ?? 0.1) * 0.6 : null);
+  const seed = t.jitterSeed ?? hashString(encode(t));
 
   // features, in the head frame; yaw slides them toward the turned side and
   // foreshortens the far half of the face
@@ -415,7 +434,7 @@ function scene(t) {
   const neckTop = cy + ry * 0.5, chin = cy + ry * 0.92;
   const bodyTop = cy + ry + 38 * scale;
   const body = blob(500, bodyTop + 360 * scale, 400 * scale, 360 * scale, 2.6);
-  const neckR = rx * 0.6;
+  const neckR = rx * 0.54;
 
   // the hairline recedes a little with age for masculine presentation
   const recede = t.presentation === "masc" ? ({ middle: 0.06, senior: 0.12 }[t.age] || 0) : 0;
@@ -424,6 +443,20 @@ function scene(t) {
   const style = hairStyle(t);
   const hairDef = HAIR[style] ? HAIR[style]({ hx: cx, hy: cy, rx, ry, head, cap, side: yaw >= 0 ? 1 : -1 }) : {};
   const curly = t.texture === "curly" || t.texture === "coily";
+
+  // texture shows in the outline, at a scale the dots can carry: straight
+  // stays smooth, wavy ripples, curly is bumpy and irregular, coily is fuller
+  const edge = {
+    wavy:  (x, y) => 20 * Math.sin((x + y * 0.6) / 32),
+    curly: (x, y) => 46 * (vnoise(x / 30, y / 30, seed + 11) - 0.25),
+    coily: (x, y) => 26 + 16 * vnoise(x / 22, y / 22, seed + 11),
+  }[t.texture];
+  if (edge && style !== "buzz" && style !== "none") {
+    for (const k of ["back", "front"]) {
+      const f = hairDef[k];
+      if (f) hairDef[k] = (x, y) => f(x, y) - edge(x, y);
+    }
+  }
 
   const ops = [];
 
@@ -444,14 +477,17 @@ function scene(t) {
 
   const hairShade = (x, y) => {
     const s = shadeEllipsoid(x, y, cx, cy - ry * 0.15, rx * 1.3, ry * 1.25, LV, amb * 0.9);
-    const grain = style === "locs"
-      ? 0.6 * Math.sin((x - cx) / 9) + 0.3 * (vnoise(x / 9, y / 40, seed) - 0.5)   // rope-like strands
-      : curly
-        ? vnoise(x / 18, y / 18, seed) - 0.5
-        : vnoise(x / 40, y / 9, seed) - 0.5;
-    const sheen = curly || hairLum > 0.5 ? 0 :
-      0.14 * gauss(x - (cx + lightSide * rx * 0.45), y - (cy - ry * 0.7), rx * 0.35, ry * 0.18);
-    return clamp01(hairLum * (0.45 + 0.6 * s) + 0.1 * grain + sheen);
+    // tone texture, also at dot scale: soft bands for wavy, clumps for curly,
+    // a dense fine texture for coily, a shine band for straight
+    let grain;   // added tone, roughly -0.25..0.25
+    if (style === "locs") grain = 0.06 * Math.sin((x - cx) / 9) + 0.03 * (vnoise(x / 9, y / 40, seed) - 0.5);
+    else if (t.texture === "wavy") grain = 0.13 + 0.13 * Math.sin(y / 26 + 0.9 * Math.sin(x / 40));
+    else if (t.texture === "curly") grain = 0.7 * Math.max(0, vnoise(x / 28, y / 28, seed) - 0.38);
+    else if (t.texture === "coily") grain = 0.32 * Math.max(0, vnoise(x / 16, y / 16, seed) - 0.45);
+    else grain = 0.01 * (vnoise(x / 40, y / 9, seed) - 0.5);
+    const sheen = t.texture !== "straight" || hairLum > 0.5 ? 0 :
+      0.32 * gauss(x - (cx + lightSide * rx * 0.4), y - (cy - ry * 0.68), rx * 0.42, ry * 0.15);
+    return clamp01(hairLum * (0.45 + 0.6 * s) + grain + sheen);
   };
 
   // --- behind the head -----------------------------------------------------
@@ -461,7 +497,8 @@ function scene(t) {
   layer(capsule(cx, neckTop, cx, bodyTop + 60, neckR), 4, (x, y) => {
     const u = clamp01(Math.abs(x - cx) / neckR);
     const s = amb + (1 - amb) * Math.max(0, (x - cx) / neckR * LV[0] + Math.sqrt(1 - u * u) * LV[2]);
-    return skin * s * (0.72 + 0.28 * sstep(chin - 10, chin + ry * 0.4, y)) * 0.92;
+    // shadow under the jaw separates the head from the neck
+    return skin * s * (0.58 + 0.42 * sstep(chin - 10, chin + ry * 0.45, y)) * 0.92;
   }, "img");
 
   // --- top -------------------------------------------------------------
@@ -503,12 +540,27 @@ function scene(t) {
                 capsule(cx + neckR * 0.7, bodyTop + 30, cx + neckR * 0.75, bodyTop + 150, 6)), 4, () => s, "img");
   }
 
+  // long hair falls in front of the shoulders: the part of the back hair
+  // outside the neck is drawn again over the top (otherwise the clothes
+  // cover it and long hair ends at the shoulders like a bob)
+  if (hairDef.back && LONG_STYLES.has(style)) {
+    const drape = inter(hairDef.back, (x, y) => neckR * 1.05 - Math.abs(x - cx), below(cy + ry * 0.55));
+    layer(drape, 6, (x, y) => hairShade(x, y) * 0.9);
+  }
+
   // --- head ------------------------------------------------------------
-  const faceShade = (x, y) => shadeEllipsoid(x, y, cx + yaw * rx * 0.25, cy, rx * 1.05, ry * 1.05, LV, amb);
-  const ears = union(blob(cx - rx * 0.97 + Math.max(0, yaw) * rx * 0.25, ey + ry * 0.1, rx * 0.16, ry * 0.2),
-                     blob(cx + rx * 0.97 + Math.min(0, yaw) * rx * 0.25, ey + ry * 0.1, rx * 0.16, ry * 0.2));
-  layer(ears, 4, (x, y) => skin * faceShade(x, y) * 0.88);
-  layer(head, 4, (x, y) => skin * faceShade(x, y));
+  // portraits are exposed for the face, so its shadow side stays readable
+  const faceShade = (x, y) => shadeEllipsoid(x, y, cx + yaw * rx * 0.25, cy, rx * 1.05, ry * 1.05, LV, Math.min(0.8, amb + 0.16));
+  // ears only where the hair doesn't fall over them
+  const earsAt = [[cx - rx * 0.97 + Math.max(0, yaw) * rx * 0.25, -1], [cx + rx * 0.97 + Math.min(0, yaw) * rx * 0.25, 1]]
+    .filter(([x, s]) => !hairDef.back || hairDef.back(x + s * rx * 0.08, ey + ry * 0.1) > 0);
+  if (earsAt.length) {
+    layer(union(...earsAt.map(([x]) => blob(x, ey + ry * 0.1, rx * 0.16, ry * 0.2))), 4,
+      (x, y) => skin * faceShade(x, y) * 0.88);
+  }
+  // a little shading toward the edge of the face, as in a photo, so light
+  // faces keep their outline against a light wall
+  layer(head, 4, (x, y, d) => skin * faceShade(x, y) * (1 - 0.3 * sstep(-60, 0, d)));
 
   // facial features darken / lighten the skin in place
   // `feature` ops (eyes, brows, nose, mouth) are diffused after rendering
@@ -527,7 +579,7 @@ function scene(t) {
     for (const ex of [eL, eR]) {
       const nearLight = Math.sign(ex - fx) === lightSide ? 0.8 : 1.1;
       k *= 1 - deep * nearLight * gauss(x - ex, y - ey + 4, rx * 0.22, ry * 0.13);  // socket
-      k *= t.mouth === "laugh"
+      k *= t.mouth === "grin"
         ? 1 - 0.75 * gauss(x - ex, y - ey - ry * 0.01, rx * 0.12, ry * 0.022)    // squinting
         : 1 - 0.85 * gauss(x - ex, y - ey, rx * 0.1, ry * 0.05);               // iris + lashes
     }
@@ -557,53 +609,72 @@ function scene(t) {
     return lum * k;
   }, true);
 
-  // facial hair before the mouth so the lips still read
-  const jaw = minus(inter(grow(head, 4), below(ey + ry * 0.38)), blob(fx, my - ry * 0.02, mw * 1.05, ry * 0.08));
+  // facial hair before the mouth so the lips still read. Shapes are sized
+  // to register at dot size; the tone follows the face's light without the
+  // head-hair texture.
+  const beardLum = (x, y) => clamp01(hairLum * (0.55 + 0.5 * faceShade(x, y)) + 0.06 * (vnoise(x / 10, y / 10, seed) - 0.5));
+  const mouthHole = blob(fx, my - ry * 0.01, mw * 1.0, ry * 0.075);
+  // beard grows below a line from the sideburns down to the mouth corners
+  const cheekLine = (x, y) => {
+    const u = clamp01((Math.abs(x - fx) - mw * 1.1) / (rx - mw * 1.1));
+    return mix(my - ry * 0.14, ey + ry * 0.12, u) - y;
+  };
+  const mustache = union(blob(fx, my - ry * 0.11, mw * 1.45, ry * 0.12),
+    capsule(fx - mw * 1.15, my - ry * 0.08, fx - mw * 1.3, my + ry * 0.07, ry * 0.045),
+    capsule(fx + mw * 1.15, my - ry * 0.08, fx + mw * 1.3, my + ry * 0.07, ry * 0.045));
   if (t.facial === "stubble") {
-    face((x, y, lum) => lum * (1 - 0.24 * cover(jaw(x, y), 14) * (0.8 + 0.4 * vnoise(x / 8, y / 8, seed))));
+    const area = union(inter(grow(head, 2), cheekLine), blob(fx, my - ry * 0.085, mw * 1.15, ry * 0.06));
+    face((x, y, lum) => lum * (1 - 0.42 * cover(minus(area, mouthHole)(x, y), 12) * (0.75 + 0.5 * vnoise(x / 8, y / 8, seed))));
   }
   if (t.facial === "beard") {
-    layer(union(jaw, blob(fx, chin + 6, rx * 0.5, ry * 0.18)), 14, (x, y) =>
-      clamp01(hairShade(x, y) * 0.9 + 0.1 * (vnoise(x / 10, y / 10, seed) - 0.5)));
+    // jaw and sideburns, a fuller rounded chin, an opening for the mouth
+    const beard = minus(inter(union(grow(head, 6), blob(fx, chin + ry * 0.04, rx * 0.56, ry * 0.22)), cheekLine), mouthHole);
+    layer(union(beard, mustache), 10, beardLum);
   }
   if (t.facial === "goatee") {
-    layer(blob(fx, my + ry * 0.22, rx * 0.2, ry * 0.18), 14, (x, y) => hairShade(x, y) * 0.95);
+    // chin beard joined to the mustache around the mouth
+    const chinBeard = union(blob(fx, my + ry * 0.24, rx * 0.34, ry * 0.26),
+      capsule(fx - mw * 1.2, my - ry * 0.04, fx - rx * 0.25, my + ry * 0.24, ry * 0.07),
+      capsule(fx + mw * 1.2, my - ry * 0.04, fx + rx * 0.25, my + ry * 0.24, ry * 0.07));
+    layer(minus(union(chinBeard, mustache), mouthHole), 10, beardLum);
   }
-  if (t.facial === "mustache" || t.facial === "goatee" || t.facial === "beard") {
-    layer(blob(fx, my - ry * 0.075, mw * 0.95, ry * 0.045), 10, (x, y) => hairShade(x, y));
-  }
+  if (t.facial === "mustache") layer(mustache, 10, beardLum);
 
-  // mouth: lip line curve, lower lip shadow, teeth for a grin
-  const curve = { neutral: 0, soft: 0.035, smile: 0.06, grin: 0.07, laugh: 0.09, half: 0.05 }[t.mouth] ?? 0.035;
-  const mwide = { neutral: 0.9, soft: 1, smile: 1.1, grin: 1.15, laugh: 1.2, half: 1 }[t.mouth] ?? 1;
-  const halfSide = yaw >= 0 ? 1 : -1;
-  const open = { grin: 0.024, laugh: 0.04 }[t.mouth];
+  // mouth, built big enough to survive the dots: neutral is a closed line,
+  // a smile curves up with lifted cheeks, a big smile opens into a dark
+  // crescent (teeth stay close to the skin tone: a bright mouth on a darker
+  // face reads as caricature)
+  const smiling = t.mouth === "smile" || t.mouth === "grin";
+  const curve = { neutral: 0.005, smile: 0.1, grin: 0.12 }[t.mouth] ?? 0.1;
+  const mwide = { neutral: 0.95, smile: 1.25, grin: 1.35 }[t.mouth] ?? 1.25;
   face((x, y, lum) => {
     const dx = (x - fx) / (mw * mwide);
-    if (Math.abs(dx) > 1.6) return lum;
+    if (Math.abs(dx) > 1.5) return lum;
     const env = Math.exp(-(dx ** 4));
-    // a half smile lifts one corner only
-    const c = t.mouth === "half" ? (dx * halfSide > 0 ? curve : curve * 0.15) : curve;
-    const lineY = my + c * ry * (1 - dx * dx) * 0.6 - c * ry * 0.3;
-    let k = 1 - 0.65 * env * gauss(0, y - lineY, 1, ry * 0.03);
-    k *= 1 - 0.18 * env * gauss(0, y - (my + ry * 0.09), 1, ry * 0.03);         // under lower lip
-    k *= 1 - 0.12 * env * gauss(0, y - (my - ry * 0.03), 1, ry * 0.035);        // upper lip tone
-    if (open) {
-      const a = gauss(0, y - (lineY + open * 0.5 * ry), 1, ry * open) * Math.exp(-((dx * 1.25) ** 4));
-      // teeth stay close to the skin tone: a bright mouth on a darker face
-      // reads as caricature
-      return mix(lum * k, Math.min(0.9, skin * 1.15 + 0.05), 0.6 * a);
+    const lineY = my + curve * ry * (1 - dx * dx) * 0.7 - curve * ry * 0.35;
+    if (t.mouth === "grin") {
+      // open: between the upper lip line and a deeper lower curve
+      const lower = lineY + ry * 0.2 * (1 - dx * dx);
+      const inside = sstep(lineY - 4, lineY + 6, y) * (1 - sstep(lower - 6, lower + 4, y)) * env;
+      const teeth = Math.min(0.9, skin * 1.1 + 0.05);
+      const shade = mix(lum * 0.3, teeth, sstep(lineY + 14, lineY + 2, y));
+      return mix(lum * (1 - 0.15 * env * gauss(0, y - lower - 10, 1, ry * 0.04)), shade, inside);
     }
+    let k = 1 - 0.85 * env * gauss(0, y - lineY, 1, ry * (t.mouth === "smile" ? 0.07 : 0.05));
+    k *= 1 - 0.25 * env * gauss(0, y - (my + ry * 0.1), 1, ry * 0.04);    // under lower lip
     return lum * k;
-  }, true);
+  });   // not diffused: the mouth is wide enough never to become a single dot
 
-  // smile lines
-  if (t.mouth === "smile" || t.mouth === "grin" || t.mouth === "laugh") {
+  if (smiling) {
+    // lifted, lit cheeks and deeper smile lines
     face((x, y, lum) => {
       let k = 1;
-      for (const s of [-1, 1]) k *= 1 - 0.1 * gauss(x - (fx + s * mw * 1.25), y - (my - ry * 0.08), rx * 0.035, ry * 0.08);
+      for (const s of [-1, 1]) {
+        k *= 1 + 0.16 * gauss(x - (fx + s * rx * 0.42), y - (my - ry * 0.26), rx * 0.14, ry * 0.08);
+        k *= 1 - 0.3 * gauss(x - (fx + s * mw * mwide * 1.2), y - (my - ry * 0.06), rx * 0.05, ry * 0.11);
+      }
       return lum * k;
-    }, true);
+    });
   }
 
   // age: folds from nose to mouth, under-eye shadows, forehead lines and a
@@ -628,9 +699,10 @@ function scene(t) {
 
   // --- accessories -----------------------------------------------------
   const frameLum = 0.1;
-  if (t.extra === "glasses" || t.extra === "bold" || t.extra === "shades") {
-    const w = t.extra === "glasses" ? 4 : 8;
-    const lens = ex => blob(ex, ey + 4, rx * 0.21, ry * 0.12, t.extra === "bold" ? 3.2 : 2.4);
+  if (t.extra === "glasses" || t.extra === "shades") {
+    // frames heavy enough to register at dot size
+    const w = 10;
+    const lens = ex => blob(ex, ey + 4, rx * 0.23, ry * 0.13, 3.2);
     const lenses = union(lens(eL), lens(eR));
     if (t.extra === "shades") {
       layer(lenses, 4, (x, y) => 0.08 + 0.12 * gauss(x - (eL + lightSide * rx * 0.08), y - ey + 10, rx * 0.06, ry * 0.04));
@@ -638,9 +710,6 @@ function scene(t) {
     const rim = (x, y) => Math.abs(lenses(x, y)) - w;
     const bridge = capsule(eL + rx * 0.2, ey, eR - rx * 0.2, ey, w * 0.8);
     layer(union(rim, bridge), 3, () => frameLum);
-  }
-  if (t.extra === "earrings") {
-    layer(union(circle(cx - rx * 0.98, ey + ry * 0.36, 10), circle(cx + rx * 0.98, ey + ry * 0.36, 10)), 3, () => 0.95);
   }
   if (t.extra === "headphones") {
     const band = (x, y) => Math.abs(blob(cx, cy, rx + 26, ry + 26)(x, y)) - 12;
@@ -672,6 +741,17 @@ function scene(t) {
 
   return { ops, pivot: [cx, chin], tilt, skin };
 }
+
+// Bob silhouette: close to the head at the crown, widening a little toward a
+// chin-length hem (a round dome cut flat read as a helmet)
+function bobBack(hx, hy, rx, ry) {
+  return inter(union(
+    blob(hx, hy - ry * 0.12, rx * 1.2, ry * 1.1),
+    blob(hx, hy + ry * 0.34, rx * 1.36, ry * 0.46, 3.5)), above(hy + ry * 0.74));
+}
+
+// styles whose hair reaches past the shoulders
+const LONG_STYLES = new Set(["long", "wavy", "bangsLong", "sideLong", "wavyBangs", "bigCurls", "locs"]);
 
 const HAIR = {
   buzz: ({ cap }) => ({ front: cap(4, 0.38, 0.4) }),
@@ -712,7 +792,7 @@ const HAIR = {
   }),
   // side part, forehead open (bangsBob is the one with a fringe)
   bob: ({ hx, hy, rx, ry, cap, side }) => ({
-    back: inter(blob(hx, hy - ry * 0.08, rx * 1.3, ry * 1.12, 2.4), above(hy + ry * 0.62)),
+    back: bobBack(hx, hy, rx, ry),
     front: union(cap(18, 0.52, 0.7),
       inter(blob(hx + side * rx * 0.4, hy - ry * 0.7, rx * 0.66, ry * 0.32), above(hy - ry * 0.4))),
   }),
@@ -785,9 +865,13 @@ const HAIR = {
   }),
   // bob with blunt bangs to the brows
   bangsBob: ({ hx, hy, rx, ry, head }) => ({
-    back: inter(blob(hx, hy - ry * 0.08, rx * 1.3, ry * 1.12, 2.4), above(hy + ry * 0.62)),
-    // heavy fringe right down to the brows
-    front: inter(grow(head, 24), above(hy - ry * 0.04)),
+    back: bobBack(hx, hy, rx, ry),
+    // arched, slightly uneven fringe: shorter in the middle, longer at the
+    // sides, so it reads as bangs rather than a helmet edge
+    front: inter(grow(head, 20), (x, y) => {
+      const u = (x - hx) / rx;
+      return y - (hy - ry * 0.2 + ry * 0.14 * u * u + 7 * Math.sin((x - hx) / 11));
+    }),
   }),
   // volume swept to one side, covering one brow
   sideSwept: ({ hx, hy, rx, ry, cap, side }) => ({
@@ -962,10 +1046,13 @@ function dots(t, pic = portrait(t)) {
 }
 
 // Square SVG, transparent by default; pass `background` (e.g. BG) to fill it
+// Coordinates are written at the requested size (not scaled by a viewBox),
+// so the SVG comes in at exactly that size in any app.
 function svg(t, { size = SIZE, background = null } = {}) {
-  const f = n => Math.round(n * 10) / 10;
-  const parts = [`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${SIZE} ${SIZE}" width="${size}" height="${size}">`];
-  if (background) parts.push(`<rect width="${SIZE}" height="${SIZE}" fill="${background}"/>`);
+  const k = size / SIZE;
+  const f = n => Math.round(n * k * 100) / 100;
+  const parts = [`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${size} ${size}" width="${size}" height="${size}">`];
+  if (background) parts.push(`<rect width="${size}" height="${size}" fill="${background}"/>`);
   for (const d of dots(t)) parts.push(`<circle cx="${f(d.x)}" cy="${f(d.y)}" r="${f(d.r)}" fill="${d.fill}"/>`);
   parts.push(`</svg>`);
   return parts.join("");
